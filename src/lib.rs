@@ -3,3 +3,4 @@
 pub mod types;
 pub mod errors;
 pub mod stack;
+pub mod machine;

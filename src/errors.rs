@@ -13,13 +13,21 @@ impl Display for TritParseErr {
 pub enum StackError {
     StackOverflow,
     StackUnderflow,
+    ConverstionError,
 }
 
 impl Display for StackError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            StackError::StackOverflow  => write!(f, "Stack Overflow"),
-            StackError::StackUnderflow => write!(f, "Stack Underflow")
+            StackError::StackOverflow    => write!(f, "Stack Overflow"),
+            StackError::StackUnderflow   => write!(f, "Stack Underflow"),
+            StackError::ConverstionError => write!(f, "ConverstionError"),
         }
+    }
+}
+
+impl From<TritParseErr> for StackError {
+    fn from(_value: TritParseErr) -> Self {
+        StackError::ConverstionError
     }
 }

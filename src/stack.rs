@@ -1,4 +1,4 @@
-use crate::{errors::StackError, types::Tryte};
+use crate::{errors::StackError, types::{Trit, Tryte}};
 
 /// Represents the expression stack and the call stack of 
 /// the Virtual Machine, and contains pointers to the top
@@ -55,6 +55,42 @@ impl<const S: usize> Stack<S> {
         }
     }
 
+    /// Pops an array of 3 trytes from the callstack
+    pub fn pop_3_tryte_callstack(&mut self) -> Result<[Tryte; 3], StackError> {
+        let zero = self.pop_tryte_callstack()?;
+        let one  = self.pop_tryte_callstack()?;
+        let two  = self.pop_tryte_callstack()?;
+
+        Ok([zero, one, two])
+    }
+
+    /// Pops an array of 3 trits from the callstack
+    pub fn pop_3_3_trit_callstack(&mut self) -> Result<[[Trit; 3]; 3], StackError> {
+        let zero = self.pop_tryte_callstack()?.value;
+        let one  = self.pop_tryte_callstack()?.value;
+        let two  = self.pop_tryte_callstack()?.value;
+
+        Ok([zero, one, two])
+    }
+
+    /// Pops an array of 3 trytes from the callstack
+    pub fn pop_3_tryte_exprstack(&mut self) -> Result<[Tryte; 3], StackError> {
+        let zero = self.pop_tryte_exprstack()?;
+        let one  = self.pop_tryte_exprstack()?;
+        let two  = self.pop_tryte_exprstack()?;
+
+        Ok([zero, one, two])
+    }
+
+    /// Pops an array of 3 trits from the exprstack
+    pub fn pop_3_3_trit_exprstack(&mut self) -> Result<[[Trit; 3]; 3], StackError> {
+        let zero = self.pop_tryte_exprstack()?.value;
+        let one  = self.pop_tryte_exprstack()?.value;
+        let two  = self.pop_tryte_exprstack()?.value;
+
+        Ok([zero, one, two])
+    }
+
     /// Pushes a tryte to the expression stack if there is space, 
     /// returns Stack Overflow otherwise
     pub fn push_tryte_exprstack(&mut self, tryte: Tryte) -> Result<(), StackError> {
@@ -78,5 +114,10 @@ impl<const S: usize> Stack<S> {
             self.exprstack[self.exprstack_ptr] = Tryte::zero();
             return Ok(tryte)
         }
+    }
+
+    /// Sets callstack_ptr to correct location for program execution
+    pub fn set_callstack_ptr(&mut self, callstack_ptr: usize) {
+        self.callstack_ptr = callstack_ptr;
     }
 }
