@@ -57,11 +57,28 @@ impl<const S: usize> Stack<S> {
 
     /// Pops an array of 3 trytes from the callstack
     pub fn pop_3_tryte_callstack(&mut self) -> Result<[Tryte; 3], StackError> {
-        let zero = self.pop_tryte_callstack()?;
-        let one  = self.pop_tryte_callstack()?;
-        let two  = self.pop_tryte_callstack()?;
+        let tryte_0 = self.pop_tryte_callstack()?;
+        let tryte_1 = self.pop_tryte_callstack()?;
+        let tryte_2 = self.pop_tryte_callstack()?;
 
-        Ok([zero, one, two])
+        Ok([tryte_0, tryte_1, tryte_2])
+    }
+
+    /// Pops an array of 9 trytes from the callstack
+    pub fn pop_9_tryte_callstack(&mut self) -> Result<[Tryte; 9], StackError> {
+        let tryte_0 = self.pop_tryte_callstack()?;
+        let tryte_1 = self.pop_tryte_callstack()?;
+        let tryte_2 = self.pop_tryte_callstack()?;
+        let tryte_3 = self.pop_tryte_callstack()?;
+        let tryte_4 = self.pop_tryte_callstack()?;
+        let tryte_5 = self.pop_tryte_callstack()?;
+        let tryte_6 = self.pop_tryte_callstack()?;
+        let tryte_7 = self.pop_tryte_callstack()?;
+        let tryte_8 = self.pop_tryte_callstack()?;
+
+        Ok([tryte_0, tryte_1, tryte_2, 
+            tryte_3, tryte_4, tryte_5, 
+            tryte_6, tryte_7, tryte_8])
     }
 
     /// Pops an array of 3 trits from the callstack

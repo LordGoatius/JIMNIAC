@@ -67,17 +67,17 @@ trait VirtualMachine {
     fn beq(&mut self) -> Result<(), StackError>;
 
     /// Push tryte
-    fn pt  (&mut self) -> Result<(), StackError>;
+    fn pt  (&mut self, tryte: Tryte) -> Result<(), StackError>;
     /// Push third
-    fn pth (&mut self) -> Result<(), StackError>;
+    fn pth (&mut self, third: [Tryte; 3]) -> Result<(), StackError>;
     /// Push triword
-    fn pw  (&mut self) -> Result<(), StackError>;
+    fn pw  (&mut self, tword: [Tryte; 9]) -> Result<(), StackError>;
     /// Push tryte command stack
-    fn pct (&mut self) -> Result<(), StackError>;
+    fn pct (&mut self, tryte: Tryte) -> Result<(), StackError>;
     /// Push third command stack
-    fn pcth(&mut self) -> Result<(), StackError>;
+    fn pcth(&mut self, third: [Tryte; 3]) -> Result<(), StackError>;
     /// Push triword command stack
-    fn pcw (&mut self) -> Result<(), StackError>;
+    fn pcw (&mut self, tword: [Tryte; 9]) -> Result<(), StackError>;
 }
 
 impl<const S: usize> VirtualMachine for Machine<S> {
@@ -159,11 +159,32 @@ impl<const S: usize> VirtualMachine for Machine<S> {
     }
 
     /// Arithmetic add tryte
-    fn add (&mut self) -> Result<(), StackError>;
+    fn add (&mut self) -> Result<(), StackError> {
+        let r0 = self.stack.pop_tryte_exprstack()?;
+        let r1 = self.stack.pop_tryte_exprstack()?;
+
+        let (_, res) = Tryte::add(r0, r1);
+        self.stack.push_tryte_exprstack(res);
+        Ok(())
+    }
     /// Arithmetic sub tryte
-    fn sub (&mut self) -> Result<(), StackError>;
+    fn sub (&mut self) -> Result<(), StackError> {
+        let r0 = self.stack.pop_tryte_exprstack()?;
+        let r1 = self.stack.pop_tryte_exprstack()?;
+
+        let (_, res) = Tryte::add(r0, Tryte::neg(r1));
+        self.stack.push_tryte_exprstack(res);
+        Ok(())
+    }
     /// Arithmetic mul tryte
-    fn mul (&mut self) -> Result<(), StackError>;
+    fn mul (&mut self) -> Result<(), StackError> {
+        let r0 = self.stack.pop_tryte_exprstack()?;
+        let r1 = self.stack.pop_tryte_exprstack()?;
+
+        let res = Tryte::mul(r0, r1);
+        self.stack.push_tryte_exprstack(res);
+        Ok(())
+    }
     /// Arithmetic add 3 trytes
     fn add3(&mut self) -> Result<(), StackError>;
     /// Arithmetic sub 3 trytes
@@ -192,15 +213,15 @@ impl<const S: usize> VirtualMachine for Machine<S> {
     fn beq(&mut self) -> Result<(), StackError>;
 
     /// Push tryte
-    fn pt  (&mut self) -> Result<(), StackError>;
+    fn pt  (&mut self, tryte: Tryte) -> Result<(), StackError>;
     /// Push third
-    fn pth (&mut self) -> Result<(), StackError>;
+    fn pth (&mut self, third: [Tryte; 3]) -> Result<(), StackError>;
     /// Push triword
-    fn pw  (&mut self) -> Result<(), StackError>;
+    fn pw  (&mut self, tword: [Tryte; 9]) -> Result<(), StackError>;
     /// Push tryte command stack
-    fn pct (&mut self) -> Result<(), StackError>;
+    fn pct (&mut self, tryte: Tryte) -> Result<(), StackError>;
     /// Push third command stack
-    fn pcth(&mut self) -> Result<(), StackError>;
+    fn pcth(&mut self, third: [Tryte; 3]) -> Result<(), StackError>;
     /// Push triword command stack
-    fn pcw (&mut self) -> Result<(), StackError>;
+    fn pcw (&mut self, tword: [Tryte; 9]) -> Result<(), StackError>;
 }
