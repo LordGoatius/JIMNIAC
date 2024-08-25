@@ -1,4 +1,4 @@
-use std::usize;
+use std::{isize, usize};
 
 use crate::{errors::StackError, stack::Stack, types::{Trit, Tryte}};
 
@@ -7,14 +7,7 @@ use crate::{errors::StackError, stack::Stack, types::{Trit, Tryte}};
 pub struct Machine<const S: usize> {
     pub stack: Stack<S>,
     program_counter: usize,
-}
-
-/// Struct representing a virtual machine that loads program 
-/// into immutable ROM
-pub struct MachineROM<const S: usize> {
-    stack: Stack<S>,
-    program_counter: usize,
-    rom: Vec<Tryte>,
+    c: Trit,
 }
 
 /// Trait for 3-Trit sized Tryte based VM
@@ -126,7 +119,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
     /// Negation
     fn neg(&mut self) -> Result<(), StackError> {
         let value = self.stack.pop_tryte_exprstack()?;
-        self.stack.push_tryte_exprstack(value.neg());
+        self.stack.push_tryte_exprstack(value.neg())?;
         Ok(())
     }
 
@@ -135,7 +128,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         let l = self.stack.pop_tryte_exprstack()?;
         let r = self.stack.pop_tryte_exprstack()?;
 
-        self.stack.push_tryte_exprstack(Tryte::and(l, r));
+        self.stack.push_tryte_exprstack(Tryte::and(l, r))?;
         Ok(())
     }
     /// Bitwise or 
@@ -143,7 +136,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         let l = self.stack.pop_tryte_exprstack()?;
         let r = self.stack.pop_tryte_exprstack()?;
 
-        self.stack.push_tryte_exprstack(Tryte::or(l, r));
+        self.stack.push_tryte_exprstack(Tryte::or(l, r))?;
         Ok(())
     }
     /// Bitwise xor
@@ -154,7 +147,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         
         self.stack.push_tryte_exprstack(
             Tryte::and(Tryte::or(l, r), Tryte::neg(Tryte::and(l, r)))
-            );
+            )?;
         Ok(())
     }
 
@@ -164,7 +157,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         let r1 = self.stack.pop_tryte_exprstack()?;
 
         let (_, res) = Tryte::add(r0, r1);
-        self.stack.push_tryte_exprstack(res);
+        self.stack.push_tryte_exprstack(res)?;
         Ok(())
     }
     /// Arithmetic sub tryte
@@ -173,7 +166,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         let r1 = self.stack.pop_tryte_exprstack()?;
 
         let (_, res) = Tryte::add(r0, Tryte::neg(r1));
-        self.stack.push_tryte_exprstack(res);
+        self.stack.push_tryte_exprstack(res)?;
         Ok(())
     }
     /// Arithmetic mul tryte
@@ -182,46 +175,284 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         let r1 = self.stack.pop_tryte_exprstack()?;
 
         let res = Tryte::mul(r0, r1);
-        self.stack.push_tryte_exprstack(res);
+        self.stack.push_tryte_exprstack(res)?;
         Ok(())
     }
     /// Arithmetic add 3 trytes
-    fn add3(&mut self) -> Result<(), StackError>;
+    fn add3(&mut self) -> Result<(), StackError> {
+        let l = self.stack.pop_3_tryte_exprstack()?;
+        let r = self.stack.pop_3_tryte_exprstack()?;
+        let (_, res) = Tryte::add_3(l, r);
+
+        self.stack.push_tryte_exprstack(res[2])?;
+        self.stack.push_tryte_exprstack(res[1])?;
+        self.stack.push_tryte_exprstack(res[0])?;
+        Ok(())
+    }
     /// Arithmetic sub 3 trytes
-    fn sub3(&mut self) -> Result<(), StackError>;
+    fn sub3(&mut self) -> Result<(), StackError> {
+        let l = self.stack.pop_3_tryte_exprstack()?;
+        let r = self.stack.pop_3_tryte_exprstack()?.map(|elem| Tryte::neg(elem));
+        let (_, res) = Tryte::add_3(l, r);
+
+        self.stack.push_tryte_exprstack(res[2])?;
+        self.stack.push_tryte_exprstack(res[1])?;
+        self.stack.push_tryte_exprstack(res[0])?;
+        Ok(())
+    }
     /// Arithmetic mul 3 trytes
-    fn mul3(&mut self) -> Result<(), StackError>;
+    fn mul3(&mut self) -> Result<(), StackError> {
+        let l = self.stack.pop_3_tryte_exprstack()?;
+        let r = self.stack.pop_3_tryte_exprstack()?;
+        let res = Tryte::mul_3(l, r);
+
+        self.stack.push_tryte_exprstack(res[2])?;
+        self.stack.push_tryte_exprstack(res[1])?;
+        self.stack.push_tryte_exprstack(res[0])?;
+        Ok(())
+    }
     /// Arithmetic add 9 trytes
-    fn add9(&mut self) -> Result<(), StackError>;
+    fn add9(&mut self) -> Result<(), StackError> {
+        let l = self.stack.pop_9_tryte_exprstack()?;
+        let r = self.stack.pop_9_tryte_exprstack()?;
+        let (_, res) = Tryte::add_9(l, r);
+
+        self.stack.push_tryte_exprstack(res[8])?;
+        self.stack.push_tryte_exprstack(res[7])?;
+        self.stack.push_tryte_exprstack(res[6])?;
+        self.stack.push_tryte_exprstack(res[5])?;
+        self.stack.push_tryte_exprstack(res[4])?;
+        self.stack.push_tryte_exprstack(res[3])?;
+        self.stack.push_tryte_exprstack(res[2])?;
+        self.stack.push_tryte_exprstack(res[1])?;
+        self.stack.push_tryte_exprstack(res[0])?;
+        Ok(())
+    }
     /// Arithmetic sub 9 trytes
-    fn sub9(&mut self) -> Result<(), StackError>;
+    fn sub9(&mut self) -> Result<(), StackError> {
+        let l = self.stack.pop_9_tryte_exprstack()?;
+        let r = self.stack.pop_9_tryte_exprstack()?.map(|elem| Tryte::neg(elem));
+        let (_, res) = Tryte::add_9(l, r);
+
+        self.stack.push_tryte_exprstack(res[8])?;
+        self.stack.push_tryte_exprstack(res[7])?;
+        self.stack.push_tryte_exprstack(res[6])?;
+        self.stack.push_tryte_exprstack(res[5])?;
+        self.stack.push_tryte_exprstack(res[4])?;
+        self.stack.push_tryte_exprstack(res[3])?;
+        self.stack.push_tryte_exprstack(res[2])?;
+        self.stack.push_tryte_exprstack(res[1])?;
+        self.stack.push_tryte_exprstack(res[0])?;
+        Ok(())
+    }
     /// Arithmetic mul 9 trytes
-    fn mul9(&mut self) -> Result<(), StackError>;
+    fn mul9(&mut self) -> Result<(), StackError> {
+        let l = self.stack.pop_9_tryte_exprstack()?;
+        let r = self.stack.pop_9_tryte_exprstack()?;
+        let res = Tryte::mul_9(l, r);
+
+        self.stack.push_tryte_exprstack(res[8])?;
+        self.stack.push_tryte_exprstack(res[7])?;
+        self.stack.push_tryte_exprstack(res[6])?;
+        self.stack.push_tryte_exprstack(res[5])?;
+        self.stack.push_tryte_exprstack(res[4])?;
+        self.stack.push_tryte_exprstack(res[3])?;
+        self.stack.push_tryte_exprstack(res[2])?;
+        self.stack.push_tryte_exprstack(res[1])?;
+        self.stack.push_tryte_exprstack(res[0])?;
+        Ok(())
+    }
 
     /// Set C flag to -1, 0, or 1 based on the top 
     /// items in the expression stack
-    fn cmp(&mut self) -> Result<(), StackError>;
+    fn cmp(&mut self) -> Result<(), StackError> {
+        let l = self.stack.pop_tryte_exprstack()?;
+        let r = self.stack.pop_tryte_exprstack()?;
+
+        match l.cmp(&r) {
+            std::cmp::Ordering::Greater => self.c = Trit::POne,
+            std::cmp::Ordering::Equal   => self.c = Trit::Zero,
+            std::cmp::Ordering::Less    => self.c = Trit::NOne,
+        }
+
+        self.stack.push_tryte_exprstack(r)?;
+        self.stack.push_tryte_exprstack(l)?;
+
+        Ok(())
+    }
     /// Unconditional jump
-    fn br (&mut self) -> Result<(), StackError>;
+    fn br (&mut self) -> Result<(), StackError> {
+        let addr = self.stack.pop_9_tryte_callstack()?;
+
+        // If addr is positive the addr_usize will not underflow
+        let mut addr_usize = 0;
+
+        for i in 0u32..27 {
+            let mul = match addr[i as usize / 3][i as usize % 3] {
+                Trit::POne =>  1,
+                Trit::Zero =>  0,
+                Trit::NOne => -1,
+            };
+            addr_usize += mul * isize::pow(3, i);
+        }
+
+        self.program_counter = addr_usize as usize;
+
+        Ok(())
+    }
     /// Jump C=-1 || 1
-    fn bne(&mut self) -> Result<(), StackError>;
+    fn bne(&mut self) -> Result<(), StackError> {
+        let addr = self.stack.pop_9_tryte_callstack()?;
+
+        match self.c {
+            Trit::Zero => return Ok(()),
+            _ => (),
+        }
+
+        // If addr is positive the addr_usize will not underflow
+        let mut addr_usize = 0;
+
+        for i in 0u32..27 {
+            let mul = match addr[i as usize / 3][i as usize % 3] {
+                Trit::POne =>  1,
+                Trit::Zero =>  0,
+                Trit::NOne => -1,
+            };
+            addr_usize += mul * isize::pow(3, i);
+        }
+
+        self.program_counter = addr_usize as usize;
+
+        Ok(())
+    }
     /// Jump C=1
-    fn bgt(&mut self) -> Result<(), StackError>;
+    fn bgt(&mut self) -> Result<(), StackError> {
+        let addr = self.stack.pop_9_tryte_callstack()?;
+
+        match self.c {
+            Trit::Zero => return Ok(()),
+            Trit::NOne => return Ok(()),
+            _ => (),
+        }
+
+        // If addr is positive the addr_usize will not underflow
+        let mut addr_usize = 0;
+
+        for i in 0u32..27 {
+            let mul = match addr[i as usize / 3][i as usize % 3] {
+                Trit::POne =>  1,
+                Trit::Zero =>  0,
+                Trit::NOne => -1,
+            };
+            addr_usize += mul * isize::pow(3, i);
+        }
+
+        self.program_counter = addr_usize as usize;
+
+        Ok(())
+    }
     /// Jump C=-1
-    fn blt(&mut self) -> Result<(), StackError>;
+    fn blt(&mut self) -> Result<(), StackError> {
+        let addr = self.stack.pop_9_tryte_callstack()?;
+
+        match self.c {
+            Trit::Zero => return Ok(()),
+            Trit::POne => return Ok(()),
+            _ => (),
+        }
+
+        // If addr is positive the addr_usize will not underflow
+        let mut addr_usize = 0;
+
+        for i in 0u32..27 {
+            let mul = match addr[i as usize / 3][i as usize % 3] {
+                Trit::POne =>  1,
+                Trit::Zero =>  0,
+                Trit::NOne => -1,
+            };
+            addr_usize += mul * isize::pow(3, i);
+        }
+
+        self.program_counter = addr_usize as usize;
+
+        Ok(())
+    }
+
     /// Jump C=0
-    fn beq(&mut self) -> Result<(), StackError>;
+    fn beq(&mut self) -> Result<(), StackError> {
+        let addr = self.stack.pop_9_tryte_callstack()?;
+
+        match self.c {
+            Trit::NOne => return Ok(()),
+            Trit::POne => return Ok(()),
+            _ => (),
+        }
+
+        // If addr is positive the addr_usize will not underflow
+        let mut addr_usize = 0;
+
+        for i in 0u32..27 {
+            let mul = match addr[i as usize / 3][i as usize % 3] {
+                Trit::POne =>  1,
+                Trit::Zero =>  0,
+                Trit::NOne => -1,
+            };
+            addr_usize += mul * isize::pow(3, i);
+        }
+
+        self.program_counter = addr_usize as usize;
+
+        Ok(())
+    }
 
     /// Push tryte
-    fn pt  (&mut self, tryte: Tryte) -> Result<(), StackError>;
+    fn pt  (&mut self, tryte: Tryte) -> Result<(), StackError> {
+        self.stack.push_tryte_exprstack(tryte)?;
+        Ok(())
+    }
     /// Push third
-    fn pth (&mut self, third: [Tryte; 3]) -> Result<(), StackError>;
+    fn pth (&mut self, third: [Tryte; 3]) -> Result<(), StackError> {
+        self.stack.push_tryte_exprstack(third[2])?;
+        self.stack.push_tryte_exprstack(third[1])?;
+        self.stack.push_tryte_exprstack(third[0])?;
+        Ok(())
+    }
     /// Push triword
-    fn pw  (&mut self, tword: [Tryte; 9]) -> Result<(), StackError>;
+    fn pw  (&mut self, tword: [Tryte; 9]) -> Result<(), StackError> {
+        self.stack.push_tryte_exprstack(tword[8])?;
+        self.stack.push_tryte_exprstack(tword[7])?;
+        self.stack.push_tryte_exprstack(tword[6])?;
+        self.stack.push_tryte_exprstack(tword[5])?;
+        self.stack.push_tryte_exprstack(tword[4])?;
+        self.stack.push_tryte_exprstack(tword[3])?;
+        self.stack.push_tryte_exprstack(tword[2])?;
+        self.stack.push_tryte_exprstack(tword[1])?;
+        self.stack.push_tryte_exprstack(tword[0])?;
+        Ok(())
+    }
     /// Push tryte command stack
-    fn pct (&mut self, tryte: Tryte) -> Result<(), StackError>;
+    fn pct (&mut self, tryte: Tryte) -> Result<(), StackError> {
+        self.stack.push_tryte_callstack(tryte)?;
+        Ok(())
+    }
     /// Push third command stack
-    fn pcth(&mut self, third: [Tryte; 3]) -> Result<(), StackError>;
+    fn pcth(&mut self, third: [Tryte; 3]) -> Result<(), StackError> {
+        self.stack.push_tryte_callstack(third[2])?;
+        self.stack.push_tryte_callstack(third[1])?;
+        self.stack.push_tryte_callstack(third[0])?;
+        Ok(())
+    }
     /// Push triword command stack
-    fn pcw (&mut self, tword: [Tryte; 9]) -> Result<(), StackError>;
+    fn pcw (&mut self, tword: [Tryte; 9]) -> Result<(), StackError> {
+        self.stack.push_tryte_callstack(tword[8])?;
+        self.stack.push_tryte_callstack(tword[7])?;
+        self.stack.push_tryte_callstack(tword[6])?;
+        self.stack.push_tryte_callstack(tword[5])?;
+        self.stack.push_tryte_callstack(tword[4])?;
+        self.stack.push_tryte_callstack(tword[3])?;
+        self.stack.push_tryte_callstack(tword[2])?;
+        self.stack.push_tryte_callstack(tword[1])?;
+        self.stack.push_tryte_callstack(tword[0])?;
+        Ok(())
+    }
 }

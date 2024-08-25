@@ -21,9 +21,75 @@ pub struct TritAddResult {
 /// A tryte is the smallest possible addressable unit.
 /// It's made up of 3 trits (eventuallly may make it generic over size, for 
 /// different machine architectures). 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct Tryte {
     pub value: [Trit; 3]
+}
+
+impl PartialOrd for Tryte {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match (self[2], other[2]) {
+            (Trit::POne, Trit::Zero) => return Some(std::cmp::Ordering::Greater),
+            (Trit::POne, Trit::NOne) => return Some(std::cmp::Ordering::Greater),
+            (Trit::Zero, Trit::NOne) => return Some(std::cmp::Ordering::Greater),
+            (Trit::Zero, Trit::POne) => return Some(std::cmp::Ordering::Less),
+            (Trit::NOne, Trit::POne) => return Some(std::cmp::Ordering::Less),
+            (Trit::NOne, Trit::Zero) => return Some(std::cmp::Ordering::Less),
+            _ => (),
+        }
+        match (self[1], other[1]) {
+            (Trit::POne, Trit::Zero) => return Some(std::cmp::Ordering::Greater),
+            (Trit::POne, Trit::NOne) => return Some(std::cmp::Ordering::Greater),
+            (Trit::Zero, Trit::NOne) => return Some(std::cmp::Ordering::Greater),
+            (Trit::Zero, Trit::POne) => return Some(std::cmp::Ordering::Less),
+            (Trit::NOne, Trit::POne) => return Some(std::cmp::Ordering::Less),
+            (Trit::NOne, Trit::Zero) => return Some(std::cmp::Ordering::Less),
+            _ => (),
+        }
+        match (self[0], other[0]) {
+            (Trit::POne, Trit::Zero) => return Some(std::cmp::Ordering::Greater),
+            (Trit::POne, Trit::NOne) => return Some(std::cmp::Ordering::Greater),
+            (Trit::Zero, Trit::NOne) => return Some(std::cmp::Ordering::Greater),
+            (Trit::Zero, Trit::POne) => return Some(std::cmp::Ordering::Less),
+            (Trit::NOne, Trit::POne) => return Some(std::cmp::Ordering::Less),
+            (Trit::NOne, Trit::Zero) => return Some(std::cmp::Ordering::Less),
+            _ => (),
+        }
+        return Some(std::cmp::Ordering::Equal);
+    }
+}
+
+impl Ord for Tryte {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self[2], other[2]) {
+            (Trit::POne, Trit::Zero) => return std::cmp::Ordering::Greater,
+            (Trit::POne, Trit::NOne) => return std::cmp::Ordering::Greater,
+            (Trit::Zero, Trit::NOne) => return std::cmp::Ordering::Greater,
+            (Trit::Zero, Trit::POne) => return std::cmp::Ordering::Less,
+            (Trit::NOne, Trit::POne) => return std::cmp::Ordering::Less,
+            (Trit::NOne, Trit::Zero) => return std::cmp::Ordering::Less,
+            _ => (),
+        }
+        match (self[1], other[1]) {
+            (Trit::POne, Trit::Zero) => return std::cmp::Ordering::Greater,
+            (Trit::POne, Trit::NOne) => return std::cmp::Ordering::Greater,
+            (Trit::Zero, Trit::NOne) => return std::cmp::Ordering::Greater,
+            (Trit::Zero, Trit::POne) => return std::cmp::Ordering::Less,
+            (Trit::NOne, Trit::POne) => return std::cmp::Ordering::Less,
+            (Trit::NOne, Trit::Zero) => return std::cmp::Ordering::Less,
+            _ => (),
+        }
+        match (self[0], other[0]) {
+            (Trit::POne, Trit::Zero) => return std::cmp::Ordering::Greater,
+            (Trit::POne, Trit::NOne) => return std::cmp::Ordering::Greater,
+            (Trit::Zero, Trit::NOne) => return std::cmp::Ordering::Greater,
+            (Trit::Zero, Trit::POne) => return std::cmp::Ordering::Less,
+            (Trit::NOne, Trit::POne) => return std::cmp::Ordering::Less,
+            (Trit::NOne, Trit::Zero) => return std::cmp::Ordering::Less,
+            _ => (),
+        }
+        return std::cmp::Ordering::Equal;
+    }
 }
 
 impl Index<usize> for Tryte {

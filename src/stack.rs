@@ -90,15 +90,6 @@ impl<const S: usize> Stack<S> {
         Ok([zero, one, two])
     }
 
-    /// Pops an array of 3 trytes from the callstack
-    pub fn pop_3_tryte_exprstack(&mut self) -> Result<[Tryte; 3], StackError> {
-        let zero = self.pop_tryte_exprstack()?;
-        let one  = self.pop_tryte_exprstack()?;
-        let two  = self.pop_tryte_exprstack()?;
-
-        Ok([zero, one, two])
-    }
-
     /// Pops an array of 3 trits from the exprstack
     pub fn pop_3_3_trit_exprstack(&mut self) -> Result<[[Trit; 3]; 3], StackError> {
         let zero = self.pop_tryte_exprstack()?.value;
@@ -131,6 +122,32 @@ impl<const S: usize> Stack<S> {
             self.exprstack[self.exprstack_ptr] = Tryte::zero();
             return Ok(tryte)
         }
+    }
+
+    /// Pops an array of 3 trytes from the exprstack
+    pub fn pop_3_tryte_exprstack(&mut self) -> Result<[Tryte; 3], StackError> {
+        let tryte_0 = self.pop_tryte_exprstack()?;
+        let tryte_1 = self.pop_tryte_exprstack()?;
+        let tryte_2 = self.pop_tryte_exprstack()?;
+
+        Ok([tryte_0, tryte_1, tryte_2])
+    }
+
+    /// Pops an array of 9 trytes from the exprstack
+    pub fn pop_9_tryte_exprstack(&mut self) -> Result<[Tryte; 9], StackError> {
+        let tryte_0 = self.pop_tryte_exprstack()?;
+        let tryte_1 = self.pop_tryte_exprstack()?;
+        let tryte_2 = self.pop_tryte_exprstack()?;
+        let tryte_3 = self.pop_tryte_exprstack()?;
+        let tryte_4 = self.pop_tryte_exprstack()?;
+        let tryte_5 = self.pop_tryte_exprstack()?;
+        let tryte_6 = self.pop_tryte_exprstack()?;
+        let tryte_7 = self.pop_tryte_exprstack()?;
+        let tryte_8 = self.pop_tryte_exprstack()?;
+
+        Ok([tryte_0, tryte_1, tryte_2, 
+            tryte_3, tryte_4, tryte_5, 
+            tryte_6, tryte_7, tryte_8])
     }
 
     /// Sets callstack_ptr to correct location for program execution
