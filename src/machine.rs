@@ -4,14 +4,15 @@ use crate::{errors::StackError, stack::Stack, types::{Trit, Tryte}};
 
 /// Struct representing a virtual machine that loads program 
 /// into the callstack
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Machine<const S: usize> {
     pub stack: Stack<S>,
-    program_counter: usize,
+    pub program_counter: usize,
     c: Trit,
 }
 
 /// Trait for 3-Trit sized Tryte based VM
-trait VirtualMachine {
+pub trait VirtualMachine {
     /// Left shift 3 trytes
     fn lsh(&mut self) -> Result<(), StackError>;
     /// Right shift 3 trytes
@@ -92,6 +93,8 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         self.stack.push_tryte_exprstack(Tryte::from_arr([shifted[3], shifted[4], shifted[5]])?)?;
         self.stack.push_tryte_exprstack(Tryte::from_arr([shifted[0], shifted[1], shifted[2]])?)?;
 
+        self.program_counter += 1;
+
         Ok(())
     }
 
@@ -113,6 +116,8 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         self.stack.push_tryte_exprstack(Tryte::from_arr([shifted[3], shifted[4], shifted[5]])?)?;
         self.stack.push_tryte_exprstack(Tryte::from_arr([shifted[0], shifted[1], shifted[2]])?)?;
 
+        self.program_counter += 1;
+
         Ok(())
     }
 
@@ -120,6 +125,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
     fn neg(&mut self) -> Result<(), StackError> {
         let value = self.stack.pop_tryte_exprstack()?;
         self.stack.push_tryte_exprstack(value.neg())?;
+        self.program_counter += 1;
         Ok(())
     }
 
@@ -129,6 +135,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         let r = self.stack.pop_tryte_exprstack()?;
 
         self.stack.push_tryte_exprstack(Tryte::and(l, r))?;
+        self.program_counter += 1;
         Ok(())
     }
     /// Bitwise or 
@@ -137,6 +144,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         let r = self.stack.pop_tryte_exprstack()?;
 
         self.stack.push_tryte_exprstack(Tryte::or(l, r))?;
+        self.program_counter += 1;
         Ok(())
     }
     /// Bitwise xor
@@ -148,6 +156,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         self.stack.push_tryte_exprstack(
             Tryte::and(Tryte::or(l, r), Tryte::neg(Tryte::and(l, r)))
             )?;
+        self.program_counter += 1;
         Ok(())
     }
 
@@ -158,6 +167,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
 
         let (_, res) = Tryte::add(r0, r1);
         self.stack.push_tryte_exprstack(res)?;
+        self.program_counter += 1;
         Ok(())
     }
     /// Arithmetic sub tryte
@@ -167,6 +177,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
 
         let (_, res) = Tryte::add(r0, Tryte::neg(r1));
         self.stack.push_tryte_exprstack(res)?;
+        self.program_counter += 1;
         Ok(())
     }
     /// Arithmetic mul tryte
@@ -176,6 +187,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
 
         let res = Tryte::mul(r0, r1);
         self.stack.push_tryte_exprstack(res)?;
+        self.program_counter += 1;
         Ok(())
     }
     /// Arithmetic add 3 trytes
@@ -187,6 +199,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         self.stack.push_tryte_exprstack(res[2])?;
         self.stack.push_tryte_exprstack(res[1])?;
         self.stack.push_tryte_exprstack(res[0])?;
+        self.program_counter += 1;
         Ok(())
     }
     /// Arithmetic sub 3 trytes
@@ -198,6 +211,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         self.stack.push_tryte_exprstack(res[2])?;
         self.stack.push_tryte_exprstack(res[1])?;
         self.stack.push_tryte_exprstack(res[0])?;
+        self.program_counter += 1;
         Ok(())
     }
     /// Arithmetic mul 3 trytes
@@ -209,6 +223,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         self.stack.push_tryte_exprstack(res[2])?;
         self.stack.push_tryte_exprstack(res[1])?;
         self.stack.push_tryte_exprstack(res[0])?;
+        self.program_counter += 1;
         Ok(())
     }
     /// Arithmetic add 9 trytes
@@ -226,6 +241,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         self.stack.push_tryte_exprstack(res[2])?;
         self.stack.push_tryte_exprstack(res[1])?;
         self.stack.push_tryte_exprstack(res[0])?;
+        self.program_counter += 1;
         Ok(())
     }
     /// Arithmetic sub 9 trytes
@@ -243,6 +259,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         self.stack.push_tryte_exprstack(res[2])?;
         self.stack.push_tryte_exprstack(res[1])?;
         self.stack.push_tryte_exprstack(res[0])?;
+        self.program_counter += 1;
         Ok(())
     }
     /// Arithmetic mul 9 trytes
@@ -260,6 +277,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         self.stack.push_tryte_exprstack(res[2])?;
         self.stack.push_tryte_exprstack(res[1])?;
         self.stack.push_tryte_exprstack(res[0])?;
+        self.program_counter += 1;
         Ok(())
     }
 
@@ -278,6 +296,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         self.stack.push_tryte_exprstack(r)?;
         self.stack.push_tryte_exprstack(l)?;
 
+        self.program_counter += 1;
         Ok(())
     }
     /// Unconditional jump
@@ -305,7 +324,10 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         let addr = self.stack.pop_9_tryte_callstack()?;
 
         match self.c {
-            Trit::Zero => return Ok(()),
+            Trit::Zero => {
+                self.program_counter += 1;
+                return Ok(());
+            },
             _ => (),
         }
 
@@ -330,8 +352,14 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         let addr = self.stack.pop_9_tryte_callstack()?;
 
         match self.c {
-            Trit::Zero => return Ok(()),
-            Trit::NOne => return Ok(()),
+            Trit::Zero => {
+                self.program_counter += 1;
+                return Ok(());
+            },
+            Trit::NOne => {
+                self.program_counter += 1;
+                return Ok(());
+            },
             _ => (),
         }
 
@@ -356,8 +384,14 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         let addr = self.stack.pop_9_tryte_callstack()?;
 
         match self.c {
-            Trit::Zero => return Ok(()),
-            Trit::POne => return Ok(()),
+            Trit::Zero => {
+                self.program_counter += 1;
+                return Ok(());
+            },
+            Trit::POne => {
+                self.program_counter += 1;
+                return Ok(());
+            },
             _ => (),
         }
 
@@ -383,8 +417,14 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         let addr = self.stack.pop_9_tryte_callstack()?;
 
         match self.c {
-            Trit::NOne => return Ok(()),
-            Trit::POne => return Ok(()),
+            Trit::NOne => {
+                self.program_counter += 1;
+                return Ok(());
+            },
+            Trit::POne => {
+                self.program_counter += 1;
+                return Ok(());
+            },
             _ => (),
         }
 
@@ -408,6 +448,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
     /// Push tryte
     fn pt  (&mut self, tryte: Tryte) -> Result<(), StackError> {
         self.stack.push_tryte_exprstack(tryte)?;
+        self.program_counter += 1 + 1;
         Ok(())
     }
     /// Push third
@@ -415,6 +456,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         self.stack.push_tryte_exprstack(third[2])?;
         self.stack.push_tryte_exprstack(third[1])?;
         self.stack.push_tryte_exprstack(third[0])?;
+        self.program_counter += 1 + 3;
         Ok(())
     }
     /// Push triword
@@ -428,11 +470,13 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         self.stack.push_tryte_exprstack(tword[2])?;
         self.stack.push_tryte_exprstack(tword[1])?;
         self.stack.push_tryte_exprstack(tword[0])?;
+        self.program_counter += 1 + 9;
         Ok(())
     }
     /// Push tryte command stack
     fn pct (&mut self, tryte: Tryte) -> Result<(), StackError> {
         self.stack.push_tryte_callstack(tryte)?;
+        self.program_counter += 1 + 1;
         Ok(())
     }
     /// Push third command stack
@@ -440,6 +484,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         self.stack.push_tryte_callstack(third[2])?;
         self.stack.push_tryte_callstack(third[1])?;
         self.stack.push_tryte_callstack(third[0])?;
+        self.program_counter += 1 + 3;
         Ok(())
     }
     /// Push triword command stack
@@ -453,6 +498,7 @@ impl<const S: usize> VirtualMachine for Machine<S> {
         self.stack.push_tryte_callstack(tword[2])?;
         self.stack.push_tryte_callstack(tword[1])?;
         self.stack.push_tryte_callstack(tword[0])?;
+        self.program_counter += 1 + 9;
         Ok(())
     }
 }

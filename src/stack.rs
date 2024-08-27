@@ -4,7 +4,7 @@ use crate::{errors::StackError, types::{Trit, Tryte}};
 /// the Virtual Machine, and contains pointers to the top
 #[derive(Debug, Clone, Copy)]
 pub struct Stack<const S: usize> {
-    callstack: [Tryte; S],
+    pub callstack: [Tryte; S],
     exprstack: [Tryte; S],
     callstack_ptr: usize,
     exprstack_ptr: usize,
@@ -153,5 +153,10 @@ impl<const S: usize> Stack<S> {
     /// Sets callstack_ptr to correct location for program execution
     pub fn set_callstack_ptr(&mut self, callstack_ptr: usize) {
         self.callstack_ptr = callstack_ptr;
+    }
+
+    /// Sets callstack_ptr to correct location for program execution
+    pub fn get_at_pc(&mut self, pc: usize) -> Tryte {
+        self.callstack[pc]
     }
 }

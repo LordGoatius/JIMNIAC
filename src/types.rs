@@ -123,7 +123,7 @@ impl Trit {
 
     /// Taken in a 0, 1, or -1, (or 2, as shorthand for -1), and returns
     /// a TritParseErr or a Trit
-    fn from_num<T: Into<i64>>(input: T) -> Result<Trit, TritParseErr> {
+    pub fn from_num<T: Into<i64>>(input: T) -> Result<Trit, TritParseErr> {
         match input.into() {
             0  => Ok(Trit::Zero),
             1  => Ok(Trit::POne),
@@ -651,6 +651,12 @@ impl Tryte {
         let (_,  res) = Tryte::add_9(temp, r26);
 
         return res;
+    }
+}
+
+impl Into<[Trit; 3]> for Tryte {
+    fn into(self) -> [Trit; 3] {
+        self.value
     }
 }
 
