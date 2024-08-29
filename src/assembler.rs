@@ -7,6 +7,7 @@ use std::path::Path;
 pub struct Assembler {
     file: BufReader<File>,
     line: usize,
+    label_map: HashMap<String, usize>,
 }
 
 impl Assembler {
@@ -14,7 +15,32 @@ impl Assembler {
         Ok(Assembler {
             file: BufReader::new(File::open(input_name)?),
             line: 0,
+            label_map: HashMap::new()
         })
+    }
+
+    pub fn preprocess(&mut self) {
+        let mut temp_file = BufWriter::new(File::create_new("temp.asm").unwrap());
+        let mut line_buf = String::new();
+        let mut counter = 0usize;
+
+        while let Ok(num) = self.file.read_line(&mut line_buf) {
+            if num == 0 { break; }
+            // Label
+            if line_buf.ends_with(":\n") {
+                if let Err(err) = self.label_map.try_insert(line_buf[..line_buf.len() - 2].to_owned(), counter) {
+                    panic!("Label name {} already used  {}", err.entry.key(), err.entry.get());
+                }
+            } else {
+                counter += 1;
+            }
+            
+            temp_file.write(line_buf.as_bytes()).unwrap();
+            line_buf.clear()
+        }
+
+        temp_file.flush().unwrap();
+        self.file = BufReader::new(File::open("temp.asm").unwrap());
     }
 
     pub fn assemble(&mut self, output_name: &Path) -> Result<(), std::io::Error> {
@@ -22,8 +48,6 @@ impl Assembler {
         let mut buf_writer = BufWriter::new(outfile);
 
         let mut line_buf = String::new();
-        let mut counter = 0usize;
-        let mut label_found = false;
         while let Ok(num) = self.file.read_line(&mut line_buf) {
             if num == 0 { break; }
             // For any extra newlines, this should just keep going
@@ -33,8 +57,6 @@ impl Assembler {
             // TODO: when process P instr, turn number into btern
             // NOTE: Only accepts btern :), and command only accepts labels
 
-            let mut label_map: HashMap<&str, usize> = HashMap::new();
-            
             let mut line = line_buf.trim().split_whitespace();
 
             match line.next().expect("Empty line") {
@@ -74,37 +96,26 @@ impl Assembler {
                 "pct"  | "PCT"  => { 
                     let _ = buf_writer.write(&[b'2', b'1', b'0'])?; 
                     // TODO: make it go to label
-                    buf_writer.write(&Assembler::parse_label::<3>(*label_map.get(line.next().expect("Provide a label to load")).expect("Labels must be defined before using them")))?
+                    buf_writer.write(&Assembler::parse_label::<3>(*self.label_map.get(line.next().expect("Provide a label to load")).expect("Labels must be defined before using them")))?
                 },
                 "pcth" | "PCTH" => { 
                     let _ = buf_writer.write(&[b'2', b'1', b'1'])?; 
                     // TODO: make it go to label
-                    buf_writer.write(&Assembler::parse_label::<9>(*label_map.get(line.next().expect("Provide a label to load")).expect("Labels must be defined before using them")))?
+                    buf_writer.write(&Assembler::parse_label::<9>(*self.label_map.get(line.next().expect("Provide a label to load")).expect("Labels must be defined before using them")))?
                 },
                 "pcw"  | "PCW"  => { 
                     let _ = buf_writer.write(&[b'2', b'1', b'2'])?; 
                     // TODO: make it go to label
-                    buf_writer.write(&Assembler::parse_label::<27>(*label_map.get(line.next().expect("Provide a label to load")).expect("Labels must be defined before using them")))?
+                    buf_writer.write(&Assembler::parse_label::<27>(*self.label_map.get(line.next().expect("Provide a label to load")).expect("Labels must be defined before using them")))?
                 },
                 label => {
-                    if label.chars().last().unwrap() != ':' {
-                        panic!("Incorrect label syntax");
-                    }
-                    if let Err(err) = label_map.try_insert(label, counter) {
-                        panic!("Label name {} already used  {}", err.entry.key(), err.entry.get());
-                    }
-                    label_found = true;
                     label.len()
                 }
             };
 
             line_buf.clear();
-            if label_found {
-                label_found = false;
-                continue;
-            }
-            counter += 1;
         }
+        buf_writer.flush().unwrap();
         Ok(())
     }
 
