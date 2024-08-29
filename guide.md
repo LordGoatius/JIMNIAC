@@ -18,8 +18,8 @@ You can use labels to do control flow. Execution begins at the first nonlabel in
 Example program:
 ```asm
 main:
-    PT 17
-    PT 16
+    PT 0t17
+    PT 0t16
     CMP
     PCW label 
     BGT 
