@@ -1,3 +1,4 @@
+```
 Bit	| ALU	| Branch | Stack | Flags
 _____________________________________
 LSH	| ADD	| CMP	 | PT	 |  C
@@ -9,6 +10,7 @@ XOR	| MUL3	| BEQ	 | PCW	 |
 	  ADD9
 	  SUB9
 	  MUL9
+```
 
 These are all of the instructions in the current Ternary virtual machine
 Its properties are odd, has no exact size for address space, and is overall incomplete.
