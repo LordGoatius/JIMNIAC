@@ -35,4 +35,4 @@ label2:
     BR 
 ```
 
-There is no halt instruction, so just infinite loop instead.
+There is no halt instruction, so just infinite loop instead. Turing failed to consider this in the halting problem I think.
