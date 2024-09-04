@@ -1,7 +1,15 @@
 [package]
 name = "ternary_machine"
-version = "0.1.0"
+author = "Jimmy Ostler"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]
 itertools = "0.13.0"
+
+[package.metadata.docs.rs]
+rustdoc-args = [
+    "--html-in-header",
+    ".cargo/registry/src/github.com-1ecc6299db9ec823/katex-doc-0.1.0/katex.html",
+]
+
