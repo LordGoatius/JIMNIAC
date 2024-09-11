@@ -1,6 +1,10 @@
-use std::ops::{Add, Deref, DerefMut, Neg, Not, Sub};
+use std::ops::{Deref, DerefMut};
 
 use crate::trits::*;
+
+pub mod binops;
+pub mod unops;
+pub mod tritops;
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub struct Tryte(pub(crate) [Trit; 9]);
@@ -10,6 +14,8 @@ pub struct TryteAddResult {
     carry: Trit,
     result: Tryte,
 }
+
+//== Helper Traits ==//
 
 impl Deref for Tryte {
     type Target = [Trit; 9];
@@ -24,110 +30,31 @@ impl DerefMut for Tryte {
     }
 }
 
-impl Add for Tryte {
-    type Output = TryteAddResult;
-    fn add(self, rhs: Self) -> Self::Output {
-        let mut output = Tryte::default();
-
-        let mut result: TritAddResult = self[0] + rhs[0];
-        output[0] = result.result;
-
-        for i in 1..9 {
-            result = self[i] + rhs[i] + result.carry;
-            output[i] = result.result;
-        }
-
-        TryteAddResult {
-            result: output,
-            carry: result.carry,
-        }
+impl From<[Trit; 9]> for Tryte {
+    fn from(value: [Trit; 9]) -> Self {
+        Tryte(value)
     }
 }
 
-impl Add<Trit> for Tryte {
-    type Output = TryteAddResult;
-
-    fn add(self, rhs: Trit) -> Self::Output {
-        let mut output = Tryte::default();
-
-        let mut result: TritAddResult = self[0] + rhs;
-        output[0] = result.result;
-
-        for i in 1..9 {
-            result = self[i] + result.carry;
-            output[i] = result.result;
-        }
-
-        TryteAddResult {
-            result: output,
-            carry: result.carry,
-        }
-    }
-}
-
-impl Sub for Tryte {
-    type Output = TryteAddResult;
-    fn sub(self, rhs: Self) -> Self::Output {
-        let rhs = -rhs;
-        let mut output = Tryte::default();
-
-        let mut result: TritAddResult = self[0] + rhs[0];
-        output[0] = result.result;
-
-        for i in 1..9 {
-            result = self[i] + rhs[i] + result.carry;
-            output[i] = result.result;
-        }
-
-        TryteAddResult {
-            result: output,
-            carry: result.carry,
-        }
-    }
-}
-
-impl Sub<Trit> for Tryte {
-    type Output = TryteAddResult;
-
-    fn sub(self, rhs: Trit) -> Self::Output {
-        let mut output = Tryte::default();
-
-        let mut result: TritAddResult = self[0] + -rhs;
-        output[0] = result.result;
-
-        for i in 1..9 {
-            result = self[i] + result.carry;
-            output[i] = result.result;
-        }
-
-        TryteAddResult {
-            result: output,
-            carry: result.carry,
-        }
+impl From<Tryte> for isize {
+    fn from(value: Tryte) -> Self {
+        value
+            .iter()
+            .enumerate()
+            .map(|(i, trit)| match trit {
+                Trit::NOne => isize::pow(3, i as u32) * -1,
+                Trit::Zero => 0,
+                Trit::POne => isize::pow(3, i as u32) * 1,
+            })
+            .sum()
     }
 }
 
 impl PartialOrd for Tryte {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let self_isize: isize = self
-            .iter()
-            .enumerate()
-            .map(|(i, trit)| match trit {
-                Trit::NOne => isize::pow(3, i as u32) * -1,
-                Trit::Zero => 0,
-                Trit::POne => isize::pow(3, i as u32) * 1,
-            })
-            .sum();
+        let self_isize:  isize = (*self).into();
 
-        let other_isize: isize = other
-            .iter()
-            .enumerate()
-            .map(|(i, trit)| match trit {
-                Trit::NOne => isize::pow(3, i as u32) * -1,
-                Trit::Zero => 0,
-                Trit::POne => isize::pow(3, i as u32) * 1,
-            })
-            .sum();
+        let other_isize: isize = (*other).into();
 
         return self_isize.partial_cmp(&other_isize);
     }
@@ -135,41 +62,11 @@ impl PartialOrd for Tryte {
 
 impl Ord for Tryte {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        let self_isize: isize = self
-            .iter()
-            .enumerate()
-            .map(|(i, trit)| match trit {
-                Trit::NOne => isize::pow(i as isize, 3) * -1,
-                Trit::Zero => 0,
-                Trit::POne => isize::pow(i as isize, 3) * 1,
-            })
-            .sum();
+        let self_isize:  isize = (*self).into();
 
-        let other_isize: isize = other
-            .iter()
-            .enumerate()
-            .map(|(i, trit)| match trit {
-                Trit::NOne => isize::pow(i as isize, 3) * -1,
-                Trit::Zero => 0,
-                Trit::POne => isize::pow(i as isize, 3) * 1,
-            })
-            .sum();
+        let other_isize: isize = (*other).into();
 
         return self_isize.cmp(&other_isize);
-    }
-}
-
-impl Neg for Tryte {
-    type Output = Tryte;
-    fn neg(self) -> Self::Output {
-        Tryte(self.map(|x| -x))
-    }
-}
-
-impl Not for Tryte {
-    type Output = Tryte;
-    fn not(self) -> Self::Output {
-        Tryte(self.map(|x| !x))
     }
 }
 

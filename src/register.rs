@@ -1,23 +1,26 @@
-use std::ops::Add;
+use std::ops::{Deref, DerefMut};
 
-use crate::{tryte::{Tryte, TryteAddResult}, word::{Word, WordAddResult}};
+use crate::word::Word;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Register(Word);
 
-impl Add for Register {
-    type Output = WordAddResult;
-    fn add(self, rhs: Self) -> Self::Output {
-        self.0 + rhs.0
+impl Deref for Register {
+    type Target = Word;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
-impl Add<Tryte> for Register {
-    type Output = TryteAddResult;
-    fn add(self, rhs: Tryte) -> Self::Output {
-        let tryte = Tryte(self.0[0..9].try_into().expect("Should always succeed"));
-        tryte + rhs
+impl DerefMut for Register {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
-
+impl From<Word> for Register {
+    fn from(value: Word) -> Self {
+        Register(value)
+    }
+}

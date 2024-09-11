@@ -1,6 +1,10 @@
-use std::ops::{Add, Deref, DerefMut, Neg, Not, Sub};
+use std::ops::{Deref, DerefMut};
 
 use crate::trits::*;
+
+pub mod binops;
+pub mod unops;
+pub mod tritops;
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub struct Word([Trit; 27]);
@@ -10,6 +14,8 @@ pub struct WordAddResult {
     carry: Trit,
     result: Word,
 }
+
+//== Helper Traits ==//
 
 impl Deref for Word {
     type Target = [Trit; 27];
@@ -24,88 +30,26 @@ impl DerefMut for Word {
     }
 }
 
-impl Add for Word {
-    type Output = WordAddResult;
-    fn add(self, rhs: Self) -> Self::Output {
-        let mut output = Word::default();
-
-        let mut result: TritAddResult = self[0] + rhs[0];
-        output[0] = result.result;
-
-        for i in 1..27 {
-            result = self[i] + rhs[i] + result.carry;
-            output[i] = result.result;
-        }
-
-        WordAddResult {
-            result: output,
-            carry: result.carry,
-        }
+impl From<[Trit; 27]> for Word {
+    fn from(value: [Trit; 27]) -> Self {
+        Word(value)
     }
 }
 
-impl Add<Trit> for Word {
-    type Output = WordAddResult;
-
-    fn add(self, rhs: Trit) -> Self::Output {
-        let mut output = Word::default();
-
-        let mut result: TritAddResult = self[0] + rhs;
-        output[0] = result.result;
-
-        for i in 1..27 {
-            result = self[i] + result.carry;
-            output[i] = result.result;
-        }
-
-        WordAddResult {
-            result: output,
-            carry: result.carry,
-        }
+impl From<Word> for isize {
+    fn from(value: Word) -> Self {
+        value
+            .iter()
+            .enumerate()
+            .map(|(i, trit)| match trit {
+                Trit::NOne => isize::pow(3, i as u32) * -1,
+                Trit::Zero => 0,
+                Trit::POne => isize::pow(3, i as u32) * 1,
+            })
+            .sum()
     }
 }
 
-impl Sub for Word {
-    type Output = WordAddResult;
-    fn sub(self, rhs: Self) -> Self::Output {
-        let rhs = -rhs;
-        let mut output = Word::default();
-
-        let mut result: TritAddResult = self[0] + rhs[0];
-        output[0] = result.result;
-
-        for i in 1..27 {
-            result = self[i] + rhs[i] + result.carry;
-            output[i] = result.result;
-        }
-
-        WordAddResult {
-            result: output,
-            carry: result.carry,
-        }
-    }
-}
-
-impl Sub<Trit> for Word {
-    type Output = WordAddResult;
-
-    fn sub(self, rhs: Trit) -> Self::Output {
-        let mut output = Word::default();
-
-        let mut result: TritAddResult = self[0] + -rhs;
-        output[0] = result.result;
-
-        for i in 1..27 {
-            result = self[i] + result.carry;
-            output[i] = result.result;
-        }
-
-        WordAddResult {
-            result: output,
-            carry: result.carry,
-        }
-    }
-}
 impl PartialOrd for Word {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         let self_isize: isize = self
@@ -155,20 +99,6 @@ impl Ord for Word {
             .sum();
 
         return self_isize.cmp(&other_isize);
-    }
-}
-
-impl Neg for Word {
-    type Output = Word;
-    fn neg(self) -> Self::Output {
-        Word(self.map(|x| -x))
-    }
-}
-
-impl Not for Word {
-    type Output = Word;
-    fn not(self) -> Self::Output {
-        Word(self.map(|x| !x))
     }
 }
 
