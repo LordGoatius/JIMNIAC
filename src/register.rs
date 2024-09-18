@@ -1,21 +1,21 @@
-use std::ops::{Deref, DerefMut};
-
-use crate::word::Word;
+use crate::{tryte::Tryte, word::Word};
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Register(Word);
 
-impl Deref for Register {
-    type Target = Word;
+impl Register {
+    pub fn replace_word(&mut self, word: Word) {
+        self.0 = word;
+    }
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    pub fn replace_tryte(&mut self, tryte: Tryte) {
+        self.0 = [tryte, Tryte::default(), Tryte::default()].into();
     }
 }
 
-impl DerefMut for Register {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+impl From<Register> for Tryte {
+    fn from(value: Register) -> Self {
+        value.into()
     }
 }
 

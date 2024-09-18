@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ternary_machine"
+name = "jt1701"
 version = "0.2.0"
 dependencies = [
  "itertools",

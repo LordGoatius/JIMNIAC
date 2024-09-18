@@ -15,6 +15,18 @@ pub struct TryteAddResult {
     result: Tryte,
 }
 
+//=== Impl Tryte ===//
+
+impl Tryte {
+    fn abs(value: Self) -> Self {
+        if value < Tryte::default() {
+            -value
+        } else {
+            value
+        }
+    }
+}
+
 //== Helper Traits ==//
 
 impl Deref for Tryte {
@@ -122,5 +134,19 @@ pub mod test {
         let big = Tryte([zero, zero, zero, zero, zero, zero, zero, zero, p_one]);
         assert!((big + big).carry == Trit::POne);
 
+    }
+
+    #[test]
+    fn abs_val() {
+        let n_one = Trit::NOne;
+        let zero  = Trit::Zero;
+        let p_one = Trit::POne;
+
+        let n = Tryte([Trit::NOne; 9]);
+        assert_eq!(Tryte::abs(n), -n);
+
+        let big = Tryte([zero, zero, p_one, zero, p_one, zero, zero, n_one, zero]);
+        assert_eq!(Tryte::abs(big), -big);
+        assert_eq!(Tryte::abs(-big), -big);
     }
 }

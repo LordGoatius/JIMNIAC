@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use crate::trits::*;
+use crate::{trits::*, tryte::Tryte};
 
 pub mod binops;
 pub mod unops;
@@ -33,6 +33,20 @@ impl DerefMut for Word {
 impl From<[Trit; 27]> for Word {
     fn from(value: [Trit; 27]) -> Self {
         Word(value)
+    }
+}
+
+impl From<[Tryte; 3]> for Word {
+    fn from(value: [Tryte; 3]) -> Self {
+        let value = unsafe { std::mem::transmute::<[[Trit; 9]; 3], [Trit; 27]>(value.map(|tryte| *tryte)) };
+        Word(value)
+    }
+}
+
+impl From<Word> for [Tryte; 3] {
+    fn from(value: Word) -> Self {
+        let value = unsafe { std::mem::transmute::<Word, [Tryte; 3]>(value) };
+        value
     }
 }
 
