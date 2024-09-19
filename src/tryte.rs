@@ -54,9 +54,9 @@ impl From<Tryte> for isize {
             .iter()
             .enumerate()
             .map(|(i, trit)| match trit {
-                Trit::NOne => isize::pow(3, i as u32) * -1,
+                Trit::NOne => -isize::pow(3, i as u32),
                 Trit::Zero => 0,
-                Trit::POne => isize::pow(3, i as u32) * 1,
+                Trit::POne => isize::pow(3, i as u32),
             })
             .sum()
     }
@@ -64,11 +64,7 @@ impl From<Tryte> for isize {
 
 impl PartialOrd for Tryte {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let self_isize:  isize = (*self).into();
-
-        let other_isize: isize = (*other).into();
-
-        return self_isize.partial_cmp(&other_isize);
+        Some(self.cmp(other))
     }
 }
 
@@ -78,7 +74,7 @@ impl Ord for Tryte {
 
         let other_isize: isize = (*other).into();
 
-        return self_isize.cmp(&other_isize);
+        self_isize.cmp(&other_isize)
     }
 }
 

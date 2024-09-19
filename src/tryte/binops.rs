@@ -1,8 +1,11 @@
+use crate::cpu::errors::CpuError;
+
 use super::*;
-use std::ops::{Add, Div, Mul, Rem, Shl, Shr, Sub};
+use std::ops::{Add, Div, Mul, Rem, Sub};
 
 //== Euc Div Result ==//
 
+#[derive(Debug)]
 pub struct EuclideanDivisionResult {
     quotient: Tryte,
     remainder: Tryte,
@@ -122,50 +125,56 @@ impl Mul<&Trit> for Tryte {
 }
 
 impl Div for Tryte {
-    type Output = Tryte;
+    type Output = Result<Tryte, CpuError>;
 
     fn div(self, rhs: Self) -> Self::Output {
-        self.euclidean_division(rhs).quotient
+        self.euclidean_division(rhs).map(|res| res.quotient)
     }
 }
 
 impl Rem for Tryte {
-    type Output = Tryte;
+    type Output = Result<Tryte, CpuError>;
     fn rem(self, rhs: Self) -> Self::Output {
-        self.euclidean_division(rhs).remainder
+        self.euclidean_division(rhs).map(|res| res.remainder)
     }
 }
 
 impl Tryte {
-    fn euclidean_division(self, rhs: Self) -> EuclideanDivisionResult {
+    fn euclidean_division(self, rhs: Self) -> Result<EuclideanDivisionResult, CpuError> {
         if rhs == Tryte::default() {
-            // FIXME: change to result to unwrap so cpu can div by zero interrupt handle
-            panic!("Division by zero is not allowed");
+            return Err(CpuError::DivByZero);
         }
-
-        // Self is a, rhs is b in a / b, a = qb + r
 
         let len = self.len();
         let b = rhs;
+        let b_sign = match b.cmp(&Tryte::default()) {
+            std::cmp::Ordering::Less => Trit::NOne,
+            std::cmp::Ordering::Equal => unreachable!(),
+            std::cmp::Ordering::Greater => Trit::POne,
+        };
 
-        (1..=len).fold(
+        let mut res = (1..=len).fold(
             EuclideanDivisionResult {
                 quotient: Tryte::default(),
                 remainder: self,
             },
             |acc: EuclideanDivisionResult, i| {
-                let k_i = acc.remainder >> len - i;
+                let k_i = acc.remainder >> (len - i);
                 let q_n = if Tryte::abs(b) > Tryte::abs(k_i) {
                     Trit::Zero
                 } else {
-                    // TODO: fix this
-                    if b > k_i {
-                        Trit::NOne
-                    } else {
-                        Trit::POne
+                    let rem_sign = match acc.remainder.cmp(&Tryte::default()) {
+                        std::cmp::Ordering::Less => Trit::NOne,
+                        std::cmp::Ordering::Equal => Trit::Zero,
+                        std::cmp::Ordering::Greater => Trit::POne,
+                    };
+                    match rem_sign {
+                        Trit::NOne => -b_sign,
+                        Trit::POne => b_sign,
+                        Trit::Zero => Trit::Zero,
                     }
                 };
-                let l_n = (b << len - i) * q_n;
+                let l_n = (b << (len - i)) * q_n;
                 let mut quotient = acc.quotient;
                 quotient[len - i] = q_n;
 
@@ -174,7 +183,21 @@ impl Tryte {
                     remainder: (acc.remainder - l_n).result,
                 }
             },
-        )
+        );
+
+        let direction = b > Tryte::default();
+
+        while res.remainder < Tryte::default() {
+            if direction {
+                res.quotient = (res.quotient - Trit::POne).result;
+                res.remainder = (res.remainder + b).result;
+            } else {
+                res.quotient = (res.quotient + Trit::POne).result;
+                res.remainder = (res.remainder - b).result;
+            }
+        }
+
+        Ok(res)
     }
 }
 
@@ -242,6 +265,8 @@ pub mod test {
             Trit::Zero,
         ]
         .into();
+
+        assert_eq!(four * seventy, two_hundred_eighty);
     }
 
     #[test]
@@ -277,8 +302,8 @@ pub mod test {
             Trit::Zero,
         ]);
 
-        let quod = nineteen / four;
-        let rem = nineteen % four;
+        let quod = (nineteen / four).unwrap();
+        let rem = (nineteen % four).unwrap();
         assert_eq!(quod, four);
         assert_eq!(rem, three);
         assert_eq!(((four * quod) + rem).result, nineteen);
@@ -308,6 +333,30 @@ pub mod test {
             Trit::Zero,
         ]);
 
+        let neleven = Tryte::from([
+            Trit::POne,
+            Trit::NOne,
+            Trit::NOne,
+            Trit::Zero,
+            Trit::Zero,
+            Trit::Zero,
+            Trit::Zero,
+            Trit::Zero,
+            Trit::Zero,
+        ]);
+
+        let one = Tryte::from([
+            Trit::POne,
+            Trit::Zero,
+            Trit::Zero,
+            Trit::Zero,
+            Trit::Zero,
+            Trit::Zero,
+            Trit::Zero,
+            Trit::Zero,
+            Trit::Zero,
+        ]);
+
         let two = Tryte::from([
             Trit::NOne,
             Trit::POne,
@@ -320,13 +369,27 @@ pub mod test {
             Trit::Zero,
         ]);
 
-        let quod = sixty_two / nsix;
-        let rem = sixty_two % nsix;
-        println!("{quod:?}");
-        println!("{rem:?}");
+        let quod = (sixty_two / nsix).unwrap();
+        let rem = (sixty_two % nsix).unwrap();
         assert_eq!(quod, nten);
         assert_eq!(rem, two);
         assert_eq!(((nsix * quod) + rem).result, sixty_two);
+
+        let quod = ((-sixty_two) / six).unwrap();
+        let rem  = ((-sixty_two) % six).unwrap();
+        assert_eq!(quod, neleven);
+        assert_eq!(rem, four);
+        assert_eq!(((six * quod) + rem).result, -sixty_two);
+
+        let quod = (-nineteen / -four).unwrap();
+        let rem = (-nineteen % -four).unwrap();
+        assert_eq!(quod, (four + Trit::POne).result);
+        assert_eq!(rem, one);
+        assert_eq!(((-four * quod) + rem).result, -nineteen);
+    }
+
+    #[test]
+    fn test_rem_positive() {
 
     }
 }
