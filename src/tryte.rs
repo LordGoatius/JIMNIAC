@@ -6,13 +6,13 @@ pub mod binops;
 pub mod unops;
 pub mod tritops;
 
-#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Tryte(pub(crate) [Trit; 9]);
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct TryteAddResult {
-    carry: Trit,
-    result: Tryte,
+    pub carry: Trit,
+    pub result: Tryte,
 }
 
 //=== Impl Tryte ===//

@@ -1,6 +1,6 @@
 use std::ops::{Add, BitAnd, BitOr, Mul, Neg, Not};
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Ord, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
 pub enum Trit {
     NOne,
     #[default]

@@ -1,4 +1,4 @@
-use std::ops::{Deref, DerefMut};
+use std::{hash::Hash, ops::{Deref, DerefMut}};
 
 use crate::{trits::*, tryte::Tryte};
 
@@ -6,13 +6,13 @@ pub mod binops;
 pub mod unops;
 pub mod tritops;
 
-#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Word([Trit; 27]);
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct WordAddResult {
     carry: Trit,
-    result: Word,
+    pub(crate) result: Word,
 }
 
 //=== Impl Word ===//
@@ -24,6 +24,16 @@ impl Word {
         } else {
             value
         }
+    }
+
+    pub(crate) fn lowest_tryte(&self) -> Tryte {
+        let [ret, _, _] = (*self).into();
+        ret
+    }
+
+    pub(crate) fn zero_lowest_tryte(&self) -> Word {
+        let [_, mid, high]: [Tryte; 3] = (*self).into();
+        [[Trit::Zero; 9].into(), mid, high].into()
     }
 }
 
@@ -93,6 +103,7 @@ impl Ord for Word {
 #[cfg(test)]
 pub mod test {
     use crate::word::{Word, WordAddResult};
+    use crate::tryte::Tryte;
 
     use super::Trit;
 
@@ -133,5 +144,12 @@ pub mod test {
         let big = Word([zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, p_one]);
         assert!((big + big).carry == Trit::POne);
 
+    }
+
+    #[test]
+    fn sizes() {
+        assert_eq!(std::mem::size_of::<Word>(), std::mem::size_of::<[Tryte; 3]>());
+        assert_eq!(std::mem::size_of::<[[Trit; 9]; 3]>(), std::mem::size_of::<[Tryte; 3]>());
+        assert_eq!(std::mem::size_of::<[[Trit; 9]; 3]>(), std::mem::size_of::<Word>());
     }
 }
