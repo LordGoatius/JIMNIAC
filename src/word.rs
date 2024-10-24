@@ -7,7 +7,7 @@ pub mod unops;
 pub mod tritops;
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
-pub struct Word([Trit; 27]);
+pub struct Word(pub(crate) [Trit; 27]);
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct WordAddResult {
@@ -34,6 +34,10 @@ impl Word {
     pub(crate) fn zero_lowest_tryte(&self) -> Word {
         let [_, mid, high]: [Tryte; 3] = (*self).into();
         [[Trit::Zero; 9].into(), mid, high].into()
+    }
+
+    pub(crate) fn set_tryte(&mut self, tryte: Tryte) {
+        *self = [tryte, Tryte::default(), Tryte::default()].into();
     }
 }
 

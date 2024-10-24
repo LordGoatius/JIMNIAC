@@ -85,6 +85,20 @@ pub mod test {
     use super::{Trit, Tryte};
 
     #[test]
+    fn iter_tribble() {
+        let n_one = Trit::NOne;
+        let zero = Trit::Zero;
+        let p_one = Trit::POne;
+
+        let mut tryte = Tryte([n_one, n_one, n_one, zero, zero, zero, zero, zero, zero]);
+
+        for _ in 0..27 {
+            println!("{tryte:?}");
+            tryte = (tryte + p_one).result;
+        }
+    }
+
+    #[test]
     fn add_tryte() {
         let n_one = Trit::NOne;
         let zero = Trit::Zero;
