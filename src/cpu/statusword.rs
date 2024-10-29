@@ -1,4 +1,6 @@
-use crate::{trits::Trit, word::Word};
+use std::ops::{Deref, DerefMut};
+
+use crate::{trits::Trit, tryte::Tryte, word::Word};
 
 /// Status Word:
 /// [C, S, P, _, _, _, _, _, _,
@@ -11,7 +13,21 @@ use crate::{trits::Trit, word::Word};
 /// I: Interrupts Enabled
 /// R: Privledge Level
 
-pub type StatusWord = Word;
+#[derive(Debug, Clone, Default)]
+pub struct StatusWord(Word);
+
+impl Deref for StatusWord {
+    type Target = Word;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for StatusWord {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
 
 impl StatusWord {
     #[inline]
@@ -39,6 +55,12 @@ impl StatusWord {
         self[19] = flag;
     }
 
+    #[inline]
+    pub(crate) fn set_interrupt_vector(&mut self, addr: Tryte) {
+        let [first, _, last] = self.0.into();
+        *self = StatusWord([first, addr, last].into());
+    }
+
     // Getting
     #[inline]
     pub(crate) fn get_carry_flag(&self) -> Trit {
@@ -63,5 +85,11 @@ impl StatusWord {
     #[inline]
     pub(crate) fn get_priv_level(&self) -> Trit {
         self[19]
+    }
+
+    #[inline]
+    pub(crate) fn get_interrupt_vector(&self) -> Tryte {
+        let [_, addr, _] = self.0.into();
+        addr
     }
 }

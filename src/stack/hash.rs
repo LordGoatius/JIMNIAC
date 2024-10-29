@@ -10,7 +10,7 @@ struct IndexStruct {
 }
 
 impl Stack {
-    pub(super) fn insert(&mut self, addr: Word, data: Tryte) {
+    pub(crate) fn insert(&mut self, addr: Word, data: Tryte) {
         let page_index_signed: isize = addr.lowest_tryte().into();
         let page_index = (page_index_signed + HALF_PAGE_SIZE as isize) as usize;
         let addr = addr.zero_lowest_tryte();
@@ -29,7 +29,7 @@ impl Stack {
         }
     }
 
-    pub(super) fn get(&mut self, addr: Word) -> &Tryte {
+    pub(crate) fn get(&mut self, addr: Word) -> &Tryte {
         let page_index_signed: isize = addr.lowest_tryte().into();
         let page_index = (page_index_signed + HALF_PAGE_SIZE as isize) as usize;
         let addr = addr.zero_lowest_tryte();
@@ -48,7 +48,7 @@ impl Stack {
         &chunk[page_index]
     }
 
-    pub(super) fn get_mut(&mut self, addr: Word) -> &mut Tryte {
+    pub(crate) fn get_mut(&mut self, addr: Word) -> &mut Tryte {
         let page_index_signed: isize = addr.lowest_tryte().into();
         let page_index = (page_index_signed + HALF_PAGE_SIZE as isize) as usize;
         let addr = addr.zero_lowest_tryte();

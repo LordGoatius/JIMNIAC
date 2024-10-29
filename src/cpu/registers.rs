@@ -7,7 +7,7 @@ pub(super) enum WordOrTryte {
     Tryte(Tryte),
 }
 
-pub(super) enum Register {
+pub enum Register {
     RN13,
     RN12,
     RN11,
