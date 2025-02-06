@@ -1,11 +1,26 @@
 use std::ops::{Add, BitAnd, BitOr, Mul, Neg, Not};
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
+#[repr(u8)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Trit {
-    NOne,
+    NOne = 0b00,
     #[default]
-    Zero,
-    POne,
+    Zero = 0b01,
+    POne = 0b10,
+}
+
+impl Trit {
+    pub const fn into_bits(self) -> u8 {
+        self as _
+    }
+
+    pub const fn from_bits(val: u8) -> Trit {
+        match val {
+            0b00 => Trit::NOne,
+            0b10 => Trit::POne,
+            _    => Trit::Zero,
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]

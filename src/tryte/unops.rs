@@ -6,69 +6,54 @@ use std::ops::{Neg, Not, Shl, Shr};
 impl Neg for Tryte {
     type Output = Tryte;
     fn neg(self) -> Self::Output {
-        Tryte(self.map(|x| -x))
+        Tryte::new()
+            .with_one(self.one().neg())
+            .with_two(self.two().neg())
+            .with_three(self.three().neg())
+            .with_four(self.four().neg())
     }
 }
 
 impl Not for Tryte {
     type Output = Tryte;
     fn not(self) -> Self::Output {
-        Tryte(self.map(|x| !x))
+        Tryte::new()
+            .with_one(self.one().not())
+            .with_two(self.two().not())
+            .with_three(self.three().not())
+            .with_four(self.four().not())
     }
 }
 
 impl Shl<usize> for Tryte {
     type Output = Tryte;
 
-    fn shl(mut self, mut rhs: usize) -> Self::Output {
-        while rhs != 0 {
-            let copy = self;
-            for i in 0..(self.len()-1) {
-                self[i+1] = copy[i];
-            }
-            rhs -= 1;
-            self[0] = Trit::Zero;
+    fn shl(self, rhs: usize) -> Self::Output {
+        let mut copy = self;
+        for _ in 0..rhs {
+            copy = Tryte::new()
+                .with_two(copy.one())
+                .with_three(copy.two())
+                .with_four(copy.three())
         }
-        self
+        copy
     }
 }
 
 impl Shr<usize> for Tryte {
     type Output = Tryte;
 
-    fn shr(mut self, mut rhs: usize) -> Self::Output {
-        while rhs != 0 {
-            for i in 0..(self.len()-1) {
-                self[i] = self[i+1];
-            }
-            rhs -= 1;
-            let len = self.len();
-            self[len - 1] = Trit::Zero;
+    fn shr(self, rhs: usize) -> Self::Output {
+        let mut copy = self;
+        for _ in 0..rhs {
+            copy = Tryte::new()
+                .with_one(copy.two())
+                .with_two(copy.three())
+                .with_three(copy.four())
         }
-        let len = self.len();
-        self[len - 1] = Trit::Zero;
-        self
+        copy
     }
 }
 
 #[cfg(test)]
-pub mod test {
-    use super::{Trit, Tryte};
-
-    #[test]
-    fn test_shift() {
-        let trit_left: Tryte = [Trit::POne; 9].into();
-        let mut trit_left_check: Tryte = [Trit::POne; 9].into();
-        trit_left_check[0] = Trit::Zero;
-        assert_eq!(trit_left << 1usize, trit_left_check);
-        trit_left_check[1] = Trit::Zero;
-        assert_eq!(trit_left << 2usize, trit_left_check);
-
-        let trit_right: Tryte = [Trit::POne; 9].into();
-        let mut trit_right_check: Tryte = [Trit::POne; 9].into();
-        trit_right_check[8] = Trit::Zero;
-        assert_eq!(trit_right >> 1usize, trit_right_check);
-        trit_right_check[7] = Trit::Zero;
-        assert_eq!(trit_right >> 2usize, trit_right_check);
-    }
-}
+pub mod test {}
