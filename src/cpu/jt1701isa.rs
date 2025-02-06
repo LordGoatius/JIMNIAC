@@ -1,6 +1,6 @@
 use crate::{tryte::Tryte, word::Word};
 
-use super::registers::Register;
+use super::{errors::CpuError, registers::Register};
 
 #[allow(non_camel_case_types)]
 pub trait jt1701 {
@@ -50,11 +50,11 @@ pub trait jt1701 {
     fn sub_r(&mut self, dest: Register, src0: Register, src1: Register);
     fn sub_i(&mut self, dest: Register, src: Register, imm: Tryte);
 
-    fn eqot_r(&mut self, dest: Register, src0: Register, src1: Register);
-    fn eqot_i(&mut self, dest: Register, src: Register, imm: Tryte);
+    fn eqot_r(&mut self, dest: Register, src0: Register, src1: Register) -> Result<(), CpuError>;
+    fn eqot_i(&mut self, dest: Register, src: Register, imm: Tryte) -> Result<(), CpuError>;
 
-    fn erem_r(&mut self, dest: Register, src0: Register, src1: Register);
-    fn erem_i(&mut self, dest: Register, src: Register, imm: Tryte);
+    fn erem_r(&mut self, dest: Register, src0: Register, src1: Register) -> Result<(), CpuError>;
+    fn erem_i(&mut self, dest: Register, src: Register, imm: Tryte) -> Result<(), CpuError>;
 
     //=== Trit ===//
     fn not(&mut self, dest: Register, src: Register);

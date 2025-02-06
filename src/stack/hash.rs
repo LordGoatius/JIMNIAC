@@ -1,6 +1,6 @@
 use std::isize;
 
-use crate::{stack::Chunk, tryte::Tryte, word::Word};
+use crate::{stack::Chunk, trits::Trit, tryte::Tryte, word::Word};
 
 use super::{Stack, HALF_PAGE_SIZE};
 
@@ -27,6 +27,13 @@ impl Stack {
                 chunk[page_index] = data;
             }
         }
+    }
+
+    pub(crate) fn insert_word(&mut self, addr: Word, data: Word) {
+        let [t0, t1, t2] = data.into();
+        self.insert(addr, t0);
+        self.insert((addr + Trit::POne).result, t1);
+        self.insert(((addr + Trit::POne).result + Trit::POne).result, t2);
     }
 
     pub(crate) fn get(&mut self, addr: Word) -> &Tryte {
@@ -65,6 +72,13 @@ impl Stack {
             .get_mut(&addr.zero_lowest_tryte())
             .unwrap();
         &mut chunk[page_index]
+    }
+
+    pub(crate) fn get_word(&mut self, addr: Word) -> Word {
+        let t0 = *self.get(addr);
+        let t1 = *self.get((addr + Trit::POne).result);
+        let t2 = *self.get(((addr + Trit::POne).result + Trit::POne).result);
+        [t0, t1, t2].into()
     }
 }
 

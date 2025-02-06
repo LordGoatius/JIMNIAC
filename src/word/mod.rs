@@ -11,7 +11,7 @@ pub struct Word(pub(crate) [Trit; 27]);
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct WordAddResult {
-    carry: Trit,
+    pub(crate) carry: Trit,
     pub(crate) result: Word,
 }
 

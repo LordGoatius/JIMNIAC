@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use crate::trits::*;
+use crate::{trits::*, word::Word};
 
 pub mod binops;
 pub mod unops;
@@ -59,6 +59,12 @@ impl From<Tryte> for isize {
                 Trit::POne => isize::pow(3, i as u32),
             })
             .sum()
+    }
+}
+
+impl From<Tryte> for Word {
+    fn from(value: Tryte) -> Self {
+        [value, Tryte::default(), Tryte::default()].into()
     }
 }
 

@@ -1,9 +1,9 @@
 use errors::CpuError;
 use jt1701isa::jt1701;
-use registers::{Register, RegisterFile};
+use registers::{Register, RegisterFile, WordOrTryte};
 use statusword::StatusWord;
 
-use crate::{stack::Stack, trits::Trit, tryte::Tryte, word::Word};
+use crate::{stack::Stack, trits::Trit, tryte::Tryte, word::{Word, WordAddResult}};
 
 pub mod errors;
 pub mod registers;
@@ -54,27 +54,73 @@ impl jt1701 for Cpu {
     /// Wait For Interrupt
     fn wfi(&mut self);
     /// Stop Interrupts
-    fn sti(&mut self);
+    fn sti(&mut self) {
+        self.cpu_state_reg.set_interrupt_enable(Trit::NOne);
+    }
     /// Begin Interrupts
-    fn bti(&mut self);
+    fn bti(&mut self) {
+        self.cpu_state_reg.set_interrupt_enable(Trit::POne);
+    }
 
     //== Loading ==//
-    fn ldri(&mut self, dest: Register, src: Register, imm: Tryte);
-    fn ldrr(&mut self, dest: Register, src0: Register, src1: Register);
-    fn ldrri(&mut self, dest: Register, src0: Register, src1: Register, imm: Tryte);
+    // Maybe the dumbest mistake I've ever made tbqh
+    fn ldri(&mut self, dest: Register, src: Register, imm: Tryte) {
+        let WordAddResult{ carry, result } = self.register_file.get_value(src) + imm;
+        self.register_file.set_value(dest, WordOrTryte::Word(self.stack.get_word(result)));
+        self.cpu_state_reg.set_carry_flag(carry);
+    }
+
+    fn ldrr(&mut self, dest: Register, src0: Register, src1: Register) {
+        let WordAddResult{ carry, result } = self.register_file.get_value(src0) + self.register_file.get_value(src1);
+        self.register_file.set_value(dest, WordOrTryte::Word(self.stack.get_word(result)));
+        self.cpu_state_reg.set_carry_flag(carry);
+    }
+
+    /// r + (r * i)
+    fn ldrri(&mut self, dest: Register, src0: Register, src1: Register, imm: Tryte) {
+        let ri: Word = self.register_file.get_value(src1) * <Tryte as Into<Word>>::into(imm);
+        let WordAddResult{ carry, result } = self.register_file.get_value(src0) + ri;
+        self.register_file.set_value(dest, WordOrTryte::Word(self.stack.get_word(result)));
+        self.cpu_state_reg.set_carry_flag(carry);
+    }
+
     // Word should have most sig. tryte be 0.
-    fn ldrpci(&mut self, dest: Register, imm: Word);
+    /// PC is r-13
+    fn ldrpci(&mut self, dest: Register, imm: Word) {
+        self.register_file.set_value(dest, WordOrTryte::Word(self.stack.get_word(imm)));
+    }
 
     //== Storing ==//
-    fn stri(&mut self, dest: Register, src: Register, imm: Tryte);
-    fn strr(&mut self, dest: Register, src0: Register, src1: Register);
-    fn strri(&mut self, dest: Register, src0: Register, src1: Register, imm: Tryte);
+    fn stri(&mut self, dest: Register, src: Register, imm: Tryte) {
+        let WordAddResult{ carry, result } = self.register_file.get_value(src) + imm;
+        self.stack.insert_word(result, self.register_file.get_value(dest));
+        self.cpu_state_reg.set_carry_flag(carry);
+    }
+
+    fn strr(&mut self, dest: Register, src0: Register, src1: Register) {
+        let WordAddResult{ carry, result } = self.register_file.get_value(src0) +  self.register_file.get_value(src1);
+        self.stack.insert_word(result, self.register_file.get_value(dest));
+        self.cpu_state_reg.set_carry_flag(carry);
+    }
+
+    fn strri(&mut self, dest: Register, src0: Register, src1: Register, imm: Tryte) {
+        let ri: Word = self.register_file.get_value(src1) * <Tryte as Into<Word>>::into(imm);
+        let WordAddResult{ carry, result } = self.register_file.get_value(src0) + ri;
+        self.stack.insert_word(result, self.register_file.get_value(dest));
+        self.cpu_state_reg.set_carry_flag(carry);
+    }
     // Word should have most sig. tryte be 0.
-    fn strpci(&mut self, dest: Register, imm: Word);
+    fn strpci(&mut self, dest: Register, imm: Word) {
+        self.stack.insert_word(imm, self.register_file.get_value(dest));
+    }
 
     //== Moving ==//
-    fn movrr(&mut self, dest: Register, src: Register);
-    fn movri(&mut self, dest: Register, imm: Word);
+    fn movrr(&mut self, dest: Register, src: Register) {
+        self.register_file.set_value(dest, WordOrTryte::Word(self.register_file.get_value(src)));
+    }
+    fn movri(&mut self, dest: Register, imm: Word) {
+        self.register_file.set_value(dest, WordOrTryte::Word(imm));
+    }
 
     //==== ALU ====//
     fn owo_r(&mut self, dest: Register, src: Register);
@@ -83,32 +129,85 @@ impl jt1701 for Cpu {
     fn uwu_r(&mut self, dest: Register, src: Register);
     fn uwu_i(&mut self, dest: Register, imm: Tryte);
 
-    fn add_r(&mut self, dest: Register, src0: Register, src1: Register);
-    fn add_i(&mut self, dest: Register, src: Register, imm: Tryte);
+    fn add_r(&mut self, dest: Register, src0: Register, src1: Register) {
+        let WordAddResult { carry, result } = self.register_file.get_value(src0) + self.register_file.get_value(src1);
+        self.register_file.set_value(dest, WordOrTryte::Word(result));
+        self.cpu_state_reg.set_carry_flag(carry);
+    }
 
-    fn mul_r(&mut self, dest: Register, src0: Register, src1: Register);
-    fn mul_i(&mut self, dest: Register, src: Register, imm: Tryte);
+    fn add_i(&mut self, dest: Register, src: Register, imm: Tryte) {
+        let WordAddResult { carry, result } = self.register_file.get_value(src) + <Tryte as Into<Word>>::into(imm);
+        self.register_file.set_value(dest, WordOrTryte::Word(result));
+        self.cpu_state_reg.set_carry_flag(carry);
+    }
 
-    fn sub_r(&mut self, dest: Register, src0: Register, src1: Register);
-    fn sub_i(&mut self, dest: Register, src: Register, imm: Tryte);
+    fn mul_r(&mut self, dest: Register, src0: Register, src1: Register) {
+        let result = self.register_file.get_value(src0) * self.register_file.get_value(src1);
+        self.register_file.set_value(dest, WordOrTryte::Word(result));
+    }
+    fn mul_i(&mut self, dest: Register, src: Register, imm: Tryte) {
+        let result = self.register_file.get_value(src) * <Tryte as Into<Word>>::into(imm);
+        self.register_file.set_value(dest, WordOrTryte::Word(result));
+    }
 
-    fn eqot_r(&mut self, dest: Register, src0: Register, src1: Register);
-    fn eqot_i(&mut self, dest: Register, src: Register, imm: Tryte);
+    fn sub_r(&mut self, dest: Register, src0: Register, src1: Register) {
+        let WordAddResult { carry, result } = self.register_file.get_value(src0) + -self.register_file.get_value(src1);
+        self.register_file.set_value(dest, WordOrTryte::Word(result));
+        self.cpu_state_reg.set_carry_flag(carry);
+    }
 
-    fn erem_r(&mut self, dest: Register, src0: Register, src1: Register);
-    fn erem_i(&mut self, dest: Register, src: Register, imm: Tryte);
+    fn sub_i(&mut self, dest: Register, src: Register, imm: Tryte) {
+        let WordAddResult { carry, result } = self.register_file.get_value(src) + -<Tryte as Into<Word>>::into(imm);
+        self.register_file.set_value(dest, WordOrTryte::Word(result));
+        self.cpu_state_reg.set_carry_flag(carry);
+    }
+
+    fn eqot_r(&mut self, dest: Register, src0: Register, src1: Register) -> Result<(), CpuError> {
+        self.register_file.set_value(dest, WordOrTryte::Word((self.register_file.get_value(src0) / self.register_file.get_value(src1))?));
+        Ok(())
+    }
+
+    fn eqot_i(&mut self, dest: Register, src: Register, imm: Tryte) -> Result<(), CpuError> {
+        self.register_file.set_value(dest, WordOrTryte::Word((self.register_file.get_value(src) / <Tryte as Into<Word>>::into(imm))?));
+        Ok(())
+    }
+
+    fn erem_r(&mut self, dest: Register, src0: Register, src1: Register) -> Result<(), CpuError> {
+        self.register_file.set_value(dest, WordOrTryte::Word((self.register_file.get_value(src0) / self.register_file.get_value(src1))?));
+        Ok(())
+    }
+    fn erem_i(&mut self, dest: Register, src: Register, imm: Tryte) -> Result<(), CpuError> {
+        self.register_file.set_value(dest, WordOrTryte::Word((self.register_file.get_value(src) / <Tryte as Into<Word>>::into(imm))?));
+        Ok(())
+    }
 
     //=== Trit ===//
-    fn not(&mut self, dest: Register, src: Register);
+    fn not(&mut self, dest: Register, src: Register) {
+        self.register_file.set_value(dest, WordOrTryte::Word(!self.register_file.get_value(src)));
+    }
 
-    fn lsh(&mut self, dest: Register, src: Register, count: Tryte);
-    fn rsh(&mut self, dest: Register, src: Register, count: Tryte);
+    fn lsh(&mut self, dest: Register, src: Register, count: Tryte) {
+        self.register_file.set_value(dest, WordOrTryte::Word(self.register_file.get_value(src) << <Tryte as Into<isize>>::into(count) as usize));
+    }
+    fn rsh(&mut self, dest: Register, src: Register, count: Tryte) {
+        self.register_file.set_value(dest, WordOrTryte::Word(self.register_file.get_value(src) >> <Tryte as Into<isize>>::into(count) as usize));
+    }
 
-    fn and_r(&mut self, dest: Register, src0: Register, src1: Register);
-    fn and_i(&mut self, dest: Register, src0: Register, mask: Word);
+    fn and_r(&mut self, dest: Register, src0: Register, src1: Register) {
+        self.register_file.set_value(dest, WordOrTryte::Word(self.register_file.get_value(src0) & self.register_file.get_value(src1)));
+    }
 
-    fn or_r(&mut self, dest: Register, src0: Register, src1: Register);
-    fn or_i(&mut self, dest: Register, src0: Register, mask: Word);
+    fn and_i(&mut self, dest: Register, src0: Register, mask: Word) {
+        self.register_file.set_value(dest, WordOrTryte::Word(self.register_file.get_value(src0) & mask));
+    }
+
+    fn or_r(&mut self, dest: Register, src0: Register, src1: Register) {
+        self.register_file.set_value(dest, WordOrTryte::Word(self.register_file.get_value(src0) | self.register_file.get_value(src1)));
+    }
+
+    fn or_i(&mut self, dest: Register, src0: Register, mask: Word) {
+        self.register_file.set_value(dest, WordOrTryte::Word(self.register_file.get_value(src0) | mask));
+    }
 
     fn rot_r(&mut self, dest: Register, src0: Register, src1: Register);
     fn rot_i(&mut self, dest: Register, src0: Register, mask: Word);

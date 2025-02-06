@@ -54,6 +54,15 @@ impl Add<Trit> for Word {
     }
 }
 
+impl Add<Tryte> for Word {
+    type Output = WordAddResult;
+
+    fn add(self, rhs: Tryte) -> Self::Output {
+        let word: Word = rhs.into();
+        self + word
+    }
+}
+
 impl Sub for Word {
     type Output = WordAddResult;
     fn sub(self, rhs: Self) -> Self::Output {
