@@ -3,8 +3,8 @@ use std::ops::{Deref, DerefMut};
 use crate::{trits::*, word::Word};
 
 pub mod binops;
-pub mod unops;
 pub mod tritops;
+pub mod unops;
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Tryte(pub(crate) [Trit; 9]);
@@ -48,6 +48,22 @@ impl From<[Trit; 9]> for Tryte {
     }
 }
 
+impl From<[[Trit; 3]; 3]> for Tryte {
+    fn from(value: [[Trit; 3]; 3]) -> Self {
+        Tryte([
+            value[0][0],
+            value[0][1],
+            value[0][2],
+            value[1][0],
+            value[1][1],
+            value[1][2],
+            value[2][0],
+            value[2][1],
+            value[2][2],
+        ])
+    }
+}
+
 impl From<Tryte> for isize {
     fn from(value: Tryte) -> Self {
         value
@@ -76,7 +92,7 @@ impl PartialOrd for Tryte {
 
 impl Ord for Tryte {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        let self_isize:  isize = (*self).into();
+        let self_isize: isize = (*self).into();
 
         let other_isize: isize = (*other).into();
 
@@ -120,7 +136,7 @@ pub mod test {
             },
             thing_0 + thing_0
         );
-        
+
         assert_eq!(
             TryteAddResult {
                 carry: Trit::POne,
@@ -133,7 +149,7 @@ pub mod test {
     #[test]
     fn compare_tryte() {
         let n_one = Trit::NOne;
-        let zero  = Trit::Zero;
+        let zero = Trit::Zero;
         let p_one = Trit::POne;
 
         let mut start = Tryte([n_one; 9]);
@@ -149,13 +165,12 @@ pub mod test {
 
         let big = Tryte([zero, zero, zero, zero, zero, zero, zero, zero, p_one]);
         assert!((big + big).carry == Trit::POne);
-
     }
 
     #[test]
     fn abs_val() {
         let n_one = Trit::NOne;
-        let zero  = Trit::Zero;
+        let zero = Trit::Zero;
         let p_one = Trit::POne;
 
         let n = Tryte([Trit::NOne; 9]);

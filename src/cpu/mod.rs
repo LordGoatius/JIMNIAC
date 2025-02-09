@@ -1,14 +1,21 @@
+#![expect(unused)]
 use errors::CpuError;
 use jt1701isa::jt1701;
-use registers::{Register, RegisterFile, WordOrTryte};
+use registers::{Register, RegisterFile};
 use statusword::StatusWord;
 
-use crate::{stack::Stack, trits::Trit, tryte::Tryte, word::{Word, WordAddResult}};
+use crate::{
+    stack::Stack,
+    trits::Trit,
+    tryte::Tryte,
+    word::Word,
+};
 
 pub mod errors;
+pub mod jt1701isa;
+pub mod macros;
 pub mod registers;
 pub mod statusword;
-pub mod jt1701isa;
 
 #[derive(Default, Debug)]
 pub struct Cpu {
@@ -19,7 +26,7 @@ pub struct Cpu {
     saved_prog_status_reg: StatusWord,
     interrupt_vector: Option<Tryte>,
     // Done
-    stack: Stack
+    stack: Stack,
 }
 
 impl Cpu {
@@ -40,247 +47,371 @@ impl Cpu {
 
 impl jt1701 for Cpu {
     //==== CPU ====//
+    /// Load Interrupt Handler Table
     fn lht(&mut self, register: Register) {
-        self.interrupt_vector = Some(self.register_file.get_value(register).lowest_tryte())
+        todo!()
     }
-
+    /// Halt
     fn hlt(&mut self) {
-        unreachable!()
+        todo!()
     }
-    fn int(&mut self, interrupt: Tryte);
+    /// Interrupt
+    fn int(&mut self, interrupt: Tryte) {
+        todo!()
+    }
+    /// No Op
     fn nop(&self) {
-        return;
+        todo!()
     }
     /// Wait For Interrupt
-    fn wfi(&mut self);
+    fn wfi(&mut self) {
+        todo!()
+    }
     /// Stop Interrupts
     fn sti(&mut self) {
-        self.cpu_state_reg.set_interrupt_enable(Trit::NOne);
+        todo!()
     }
     /// Begin Interrupts
     fn bti(&mut self) {
-        self.cpu_state_reg.set_interrupt_enable(Trit::POne);
+        todo!()
+    }
+    /// Returns from interrupt and restores status register
+    fn rti(&mut self) {
+        todo!()
     }
 
-    //== Loading ==//
-    // Maybe the dumbest mistake I've ever made tbqh
+    //== Loading Register to Memory ==//
+    /// dest = *(src + imm)
     fn ldri(&mut self, dest: Register, src: Register, imm: Tryte) {
-        let WordAddResult{ carry, result } = self.register_file.get_value(src) + imm;
-        self.register_file.set_value(dest, WordOrTryte::Word(self.stack.get_word(result)));
-        self.cpu_state_reg.set_carry_flag(carry);
+        todo!()
     }
-
+    /// dest = *(src0 + src1)
     fn ldrr(&mut self, dest: Register, src0: Register, src1: Register) {
-        let WordAddResult{ carry, result } = self.register_file.get_value(src0) + self.register_file.get_value(src1);
-        self.register_file.set_value(dest, WordOrTryte::Word(self.stack.get_word(result)));
-        self.cpu_state_reg.set_carry_flag(carry);
+        todo!()
     }
-
-    /// r + (r * i)
+    /// dest = *(src0 + src1 + imm)
     fn ldrri(&mut self, dest: Register, src0: Register, src1: Register, imm: Tryte) {
-        let ri: Word = self.register_file.get_value(src1) * <Tryte as Into<Word>>::into(imm);
-        let WordAddResult{ carry, result } = self.register_file.get_value(src0) + ri;
-        self.register_file.set_value(dest, WordOrTryte::Word(self.stack.get_word(result)));
-        self.cpu_state_reg.set_carry_flag(carry);
+        todo!()
     }
-
-    // Word should have most sig. tryte be 0.
-    /// PC is r-13
+    /// Word should have most sig. tryte be 0.
+    /// dest = *(pc + imm)
     fn ldrpci(&mut self, dest: Register, imm: Word) {
-        self.register_file.set_value(dest, WordOrTryte::Word(self.stack.get_word(imm)));
+        todo!()
     }
 
-    //== Storing ==//
+    //== Storing Register to Memory ==//
+    /// *(src + imm) = dest
     fn stri(&mut self, dest: Register, src: Register, imm: Tryte) {
-        let WordAddResult{ carry, result } = self.register_file.get_value(src) + imm;
-        self.stack.insert_word(result, self.register_file.get_value(dest));
-        self.cpu_state_reg.set_carry_flag(carry);
+        todo!()
     }
-
+    /// *(src0 + src1) = dest
     fn strr(&mut self, dest: Register, src0: Register, src1: Register) {
-        let WordAddResult{ carry, result } = self.register_file.get_value(src0) +  self.register_file.get_value(src1);
-        self.stack.insert_word(result, self.register_file.get_value(dest));
-        self.cpu_state_reg.set_carry_flag(carry);
+        todo!()
     }
-
+    /// *(src0 + src1 + imm) = dest
     fn strri(&mut self, dest: Register, src0: Register, src1: Register, imm: Tryte) {
-        let ri: Word = self.register_file.get_value(src1) * <Tryte as Into<Word>>::into(imm);
-        let WordAddResult{ carry, result } = self.register_file.get_value(src0) + ri;
-        self.stack.insert_word(result, self.register_file.get_value(dest));
-        self.cpu_state_reg.set_carry_flag(carry);
+        todo!()
     }
-    // Word should have most sig. tryte be 0.
+    /// Word should have most sig. tryte be 0.
+    /// *(pc + imm) = dest
     fn strpci(&mut self, dest: Register, imm: Word) {
-        self.stack.insert_word(imm, self.register_file.get_value(dest));
+        todo!()
     }
 
     //== Moving ==//
     fn movrr(&mut self, dest: Register, src: Register) {
-        self.register_file.set_value(dest, WordOrTryte::Word(self.register_file.get_value(src)));
+        todo!()
     }
+    /// imm will always be 2 trytes long, or 18 trits.
+    /// To move a larger size, the assembler will create shifts and adds in order to do so
     fn movri(&mut self, dest: Register, imm: Word) {
-        self.register_file.set_value(dest, WordOrTryte::Word(imm));
+        todo!()
     }
 
     //==== ALU ====//
-    fn owo_r(&mut self, dest: Register, src: Register);
-    fn owo_i(&mut self, dest: Register, imm: Tryte);
-
-    fn uwu_r(&mut self, dest: Register, src: Register);
-    fn uwu_i(&mut self, dest: Register, imm: Tryte);
-
-    fn add_r(&mut self, dest: Register, src0: Register, src1: Register) {
-        let WordAddResult { carry, result } = self.register_file.get_value(src0) + self.register_file.get_value(src1);
-        self.register_file.set_value(dest, WordOrTryte::Word(result));
-        self.cpu_state_reg.set_carry_flag(carry);
+    // owo/uwu
+    // 0..=2: op
+    // 3..=5: ___: #imm
+    // 6..=8: %d, %s, %z
+    fn owo(&mut self, imm: Tryte, dest: Register, src: Register) {
+        todo!()
+    }
+    fn uwu(&mut self, imm: Tryte, dest: Register, src: Register) {
+        todo!()
     }
 
-    fn add_i(&mut self, dest: Register, src: Register, imm: Tryte) {
-        let WordAddResult { carry, result } = self.register_file.get_value(src) + <Tryte as Into<Word>>::into(imm);
-        self.register_file.set_value(dest, WordOrTryte::Word(result));
-        self.cpu_state_reg.set_carry_flag(carry);
+    /// 0..=2: __:op _: control tryte (first rep reg type, second condition, third ???)
+    /// 3..=5: ___: #imm
+    /// 6..=8: %d, %s1, %s2
+    fn add(&mut self, dest: Register, imm: Tryte, src0: Register, src1: Register) {
+        todo!()
     }
 
-    fn mul_r(&mut self, dest: Register, src0: Register, src1: Register) {
-        let result = self.register_file.get_value(src0) * self.register_file.get_value(src1);
-        self.register_file.set_value(dest, WordOrTryte::Word(result));
-    }
-    fn mul_i(&mut self, dest: Register, src: Register, imm: Tryte) {
-        let result = self.register_file.get_value(src) * <Tryte as Into<Word>>::into(imm);
-        self.register_file.set_value(dest, WordOrTryte::Word(result));
+    /// d = s0 * (s1 + imm)
+    fn mul(&mut self, dest: Register, imm: Tryte, src0: Register, src1: Register) {
+        todo!()
     }
 
-    fn sub_r(&mut self, dest: Register, src0: Register, src1: Register) {
-        let WordAddResult { carry, result } = self.register_file.get_value(src0) + -self.register_file.get_value(src1);
-        self.register_file.set_value(dest, WordOrTryte::Word(result));
-        self.cpu_state_reg.set_carry_flag(carry);
+    /// d = s0 - (s1 + imm)
+    fn sub(&mut self, dest: Register, imm: Tryte, src0: Register, src1: Register) {
+        todo!()
     }
 
-    fn sub_i(&mut self, dest: Register, src: Register, imm: Tryte) {
-        let WordAddResult { carry, result } = self.register_file.get_value(src) + -<Tryte as Into<Word>>::into(imm);
-        self.register_file.set_value(dest, WordOrTryte::Word(result));
-        self.cpu_state_reg.set_carry_flag(carry);
+    /// d = s0 / (s1 + imm)
+    fn eqot(
+        &mut self,
+        dest: Register,
+        imm: Tryte,
+        src0: Register,
+        src1: Register,
+    ) -> Result<(), CpuError> {
+        todo!()
     }
 
-    fn eqot_r(&mut self, dest: Register, src0: Register, src1: Register) -> Result<(), CpuError> {
-        self.register_file.set_value(dest, WordOrTryte::Word((self.register_file.get_value(src0) / self.register_file.get_value(src1))?));
-        Ok(())
-    }
-
-    fn eqot_i(&mut self, dest: Register, src: Register, imm: Tryte) -> Result<(), CpuError> {
-        self.register_file.set_value(dest, WordOrTryte::Word((self.register_file.get_value(src) / <Tryte as Into<Word>>::into(imm))?));
-        Ok(())
-    }
-
-    fn erem_r(&mut self, dest: Register, src0: Register, src1: Register) -> Result<(), CpuError> {
-        self.register_file.set_value(dest, WordOrTryte::Word((self.register_file.get_value(src0) / self.register_file.get_value(src1))?));
-        Ok(())
-    }
-    fn erem_i(&mut self, dest: Register, src: Register, imm: Tryte) -> Result<(), CpuError> {
-        self.register_file.set_value(dest, WordOrTryte::Word((self.register_file.get_value(src) / <Tryte as Into<Word>>::into(imm))?));
-        Ok(())
+    /// d = s0 % (s1 + imm)
+    fn erem(
+        &mut self,
+        dest: Register,
+        imm: Tryte,
+        src0: Register,
+        src1: Register,
+    ) -> Result<(), CpuError> {
+        todo!()
     }
 
     //=== Trit ===//
+    /// d = ~s
     fn not(&mut self, dest: Register, src: Register) {
-        self.register_file.set_value(dest, WordOrTryte::Word(!self.register_file.get_value(src)));
+        todo!()
     }
 
+    // NOTE: Should left and right be different?
     fn lsh(&mut self, dest: Register, src: Register, count: Tryte) {
-        self.register_file.set_value(dest, WordOrTryte::Word(self.register_file.get_value(src) << <Tryte as Into<isize>>::into(count) as usize));
+        todo!()
     }
     fn rsh(&mut self, dest: Register, src: Register, count: Tryte) {
-        self.register_file.set_value(dest, WordOrTryte::Word(self.register_file.get_value(src) >> <Tryte as Into<isize>>::into(count) as usize));
+        todo!()
     }
 
+    // FIXME: Should these be separate?
     fn and_r(&mut self, dest: Register, src0: Register, src1: Register) {
-        self.register_file.set_value(dest, WordOrTryte::Word(self.register_file.get_value(src0) & self.register_file.get_value(src1)));
+        todo!()
     }
-
     fn and_i(&mut self, dest: Register, src0: Register, mask: Word) {
-        self.register_file.set_value(dest, WordOrTryte::Word(self.register_file.get_value(src0) & mask));
+        todo!()
     }
 
+    // FIXME: Should these be separate?
     fn or_r(&mut self, dest: Register, src0: Register, src1: Register) {
-        self.register_file.set_value(dest, WordOrTryte::Word(self.register_file.get_value(src0) | self.register_file.get_value(src1)));
+        todo!()
     }
-
     fn or_i(&mut self, dest: Register, src0: Register, mask: Word) {
-        self.register_file.set_value(dest, WordOrTryte::Word(self.register_file.get_value(src0) | mask));
+        todo!()
     }
 
-    fn rot_r(&mut self, dest: Register, src0: Register, src1: Register);
-    fn rot_i(&mut self, dest: Register, src0: Register, mask: Word);
+    // FIXME: Should these be separate?
+    fn rot_r(&mut self, dest: Register, src0: Register, src1: Register) {
+        todo!()
+    }
+    fn rot_i(&mut self, dest: Register, src0: Register, mask: Word) {
+        todo!()
+    }
 
     //== Stack ==//
-    fn push_r3(&mut self, r0: Register, r1: Register, r2: Register);
-    fn push_im(&mut self, imm: Word);
-    fn push_mem(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
+    /// (r0 + r1) * r2
+    fn push_r3(&mut self, r0: Register, r1: Register, r2: Register) {
+        todo!()
+    }
+    fn push_im(&mut self, imm: Word) {
+        todo!()
+    }
+    /// *((r0 + r1) * (r2 + imm))
+    fn push_mem(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
+        todo!()
+    }
 
     //== Branch ==//
     /// Compare 2 registers
-    fn cmp(&mut self, r0: Register, r1: Register);
+    fn cmp(&mut self, r0: Register, r1: Register) {
+        todo!()
+    }
     /// Set Parity Trit
-    fn spt(&mut self, r: Register);
+    fn spt(&mut self, r: Register) {
+        todo!()
+    }
     /// Set SignTrit
-    fn sst(&mut self, r: Register);
+    fn sst(&mut self, r: Register) {
+        todo!()
+    }
 
-    fn br_r(&mut self, r0: Register, r1: Register, r2: Register);
-    fn br_i(&mut self, imm: Word);
-    fn br_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
+    /// (r0 + r1) * r2
+    fn br_r(&mut self, r0: Register, r1: Register, r2: Register) {
+        todo!()
+    }
+    fn br_i(&mut self, imm: Word) {
+        todo!()
+    }
+    /// *((r0 + r1) * (r2 + imm))
+    fn br_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
+        todo!()
+    }
 
-    fn bne_r(&mut self, r0: Register, r1: Register, r2: Register);
-    fn bne_i(&mut self, imm: Word);
-    fn bne_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
+    /// (r0 + r1) * r2
+    fn bne_r(&mut self, r0: Register, r1: Register, r2: Register) {
+        todo!()
+    }
+    fn bne_i(&mut self, imm: Word) {
+        todo!()
+    }
+    /// *((r0 + r1) * (r2 + imm))
+    fn bne_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
+        todo!()
+    }
 
-    fn bgt_r(&mut self, r0: Register, r1: Register, r2: Register);
-    fn bgt_i(&mut self, imm: Word);
-    fn bgt_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
+    /// (r0 + r1) * r2
+    fn bgt_r(&mut self, r0: Register, r1: Register, r2: Register) {
+        todo!()
+    }
+    fn bgt_i(&mut self, imm: Word) {
+        todo!()
+    }
+    /// *((r0 + r1) * (r2 + imm))
+    fn bgt_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
+        todo!()
+    }
 
-    fn blt_r(&mut self, r0: Register, r1: Register, r2: Register);
-    fn blt_i(&mut self, imm: Word);
-    fn blt_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
+    /// (r0 + r1) * r2
+    fn blt_r(&mut self, r0: Register, r1: Register, r2: Register) {
+        todo!()
+    }
+    fn blt_i(&mut self, imm: Word) {
+        todo!()
+    }
+    /// *((r0 + r1) * (r2 + imm))
+    fn blt_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
+        todo!()
+    }
 
-    fn beq_r(&mut self, r0: Register, r1: Register, r2: Register);
-    fn beq_i(&mut self, imm: Word);
-    fn beq_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
+    /// (r0 + r1) * r2
+    fn beq_r(&mut self, r0: Register, r1: Register, r2: Register) {
+        todo!()
+    }
+    fn beq_i(&mut self, imm: Word) {
+        todo!()
+    }
+    /// *((r0 + r1) * (r2 + imm))
+    fn beq_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
+        todo!()
+    }
 
-    fn bgeq_r(&mut self, r0: Register, r1: Register, r2: Register);
-    fn bgeq_i(&mut self, imm: Word);
-    fn bgeq_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
+    /// (r0 + r1) * r2
+    fn bgeq_r(&mut self, r0: Register, r1: Register, r2: Register) {
+        todo!()
+    }
+    fn bgeq_i(&mut self, imm: Word) {
+        todo!()
+    }
+    /// *((r0 + r1) * (r2 + imm))
+    fn bgeq_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
+        todo!()
+    }
 
-    fn bleq_r(&mut self, r0: Register, r1: Register, r2: Register);
-    fn bleq_i(&mut self, imm: Word);
-    fn bleq_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
+    /// (r0 + r1) * r2
+    fn bleq_r(&mut self, r0: Register, r1: Register, r2: Register) {
+        todo!()
+    }
+    fn bleq_i(&mut self, imm: Word) {
+        todo!()
+    }
+    /// *((r0 + r1) * (r2 + imm))
+    fn bleq_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
+        todo!()
+    }
 
-    fn bofn_r(&mut self, r0: Register, r1: Register, r2: Register);
-    fn bofn_i(&mut self, imm: Word);
-    fn bofn_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
+    /// (r0 + r1) * r2
+    fn bofn_r(&mut self, r0: Register, r1: Register, r2: Register) {
+        todo!()
+    }
+    fn bofn_i(&mut self, imm: Word) {
+        todo!()
+    }
+    /// *((r0 + r1) * (r2 + imm))
+    fn bofn_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
+        todo!()
+    }
 
-    fn bofz_r(&mut self, r0: Register, r1: Register, r2: Register);
-    fn bofz_i(&mut self, imm: Word);
-    fn bofz_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
+    /// (r0 + r1) * r2
+    fn bofz_r(&mut self, r0: Register, r1: Register, r2: Register) {
+        todo!()
+    }
+    fn bofz_i(&mut self, imm: Word) {
+        todo!()
+    }
+    /// *((r0 + r1) * (r2 + imm))
+    fn bofz_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
+        todo!()
+    }
 
-    fn bofp_r(&mut self, r0: Register, r1: Register, r2: Register);
-    fn bofp_i(&mut self, imm: Word);
-    fn bofp_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
+    /// (r0 + r1) * r2
+    fn bofp_r(&mut self, r0: Register, r1: Register, r2: Register) {
+        todo!()
+    }
+    fn bofp_i(&mut self, imm: Word) {
+        todo!()
+    }
+    /// *((r0 + r1) * (r2 + imm))
+    fn bofp_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
+        todo!()
+    }
 
-    fn bpn_r(&mut self, r0: Register, r1: Register, r2: Register);
-    fn bpn_i(&mut self, imm: Word);
-    fn bpn_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
+    /// (r0 + r1) * r2
+    fn bpn_r(&mut self, r0: Register, r1: Register, r2: Register) {
+        todo!()
+    }
+    fn bpn_i(&mut self, imm: Word) {
+        todo!()
+    }
+    /// *((r0 + r1) * (r2 + imm))
+    fn bpn_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
+        todo!()
+    }
 
-    fn bpz_r(&mut self, r0: Register, r1: Register, r2: Register);
-    fn bpz_i(&mut self, imm: Word);
-    fn bpz_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
+    /// (r0 + r1) * r2
+    fn bpz_r(&mut self, r0: Register, r1: Register, r2: Register) {
+        todo!()
+    }
+    fn bpz_i(&mut self, imm: Word) {
+        todo!()
+    }
+    /// *((r0 + r1) * (r2 + imm))
+    fn bpz_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
+        todo!()
+    }
 
-    fn bpp_r(&mut self, r0: Register, r1: Register, r2: Register);
-    fn bpp_i(&mut self, imm: Word);
-    fn bpp_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
+    /// (r0 + r1) * r2
+    fn bpp_r(&mut self, r0: Register, r1: Register, r2: Register) {
+        todo!()
+    }
+    fn bpp_i(&mut self, imm: Word) {
+        todo!()
+    }
+    /// *((r0 + r1) * (r2 + imm))
+    fn bpp_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
+        todo!()
+    }
 
     //== Ports ==//
-    fn in_r(&mut self, dest: Register, loc: Register);
-    fn in_i(&mut self, dest: Register, loc: Word);
+    fn in_r(&mut self, dest: Register, loc: Register) {
+        todo!()
+    }
+    fn in_i(&mut self, dest: Register, loc: Word) {
+        todo!()
+    }
 
-    fn out_r(&mut self, dest: Register, loc: Register);
-    fn out_i(&mut self, dest: Register, loc: Word);
+    fn out_r(&mut self, dest: Register, loc: Register) {
+        todo!()
+    }
+    fn out_i(&mut self, dest: Register, loc: Word) {
+        todo!()
+    }
 }
