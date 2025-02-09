@@ -98,7 +98,8 @@ pub trait jt1701 {
     //== Stack ==//
     /// (r0 + r1) * r2
     fn push_r3(&mut self, r0: Register, r1: Register, r2: Register);
-    fn push_im(&mut self, imm: Word);
+    fn push_im_word(&mut self, imm: Word);
+    fn push_im_tryte(&mut self, imm: Tryte);
     /// *((r0 + r1) * (r2 + imm))
     fn push_mem(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
 

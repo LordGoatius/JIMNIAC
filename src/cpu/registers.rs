@@ -6,11 +6,13 @@ use crate::word::Word;
 
 use itertools::{Either, Either::{Left, Right}};
 
+#[derive(Debug, Clone, Copy)]
 pub(super) enum WordOrTryte {
     Word,
     Tryte,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum RegisterNumber {
     RN13,
     RN12,
@@ -39,12 +41,35 @@ pub enum RegisterNumber {
     R11,
     R12,
     R13,
+    SP, // => R12
+    BP, // => R13
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct Register {
-    num: RegisterNumber,
-    size: WordOrTryte,
+    pub num: RegisterNumber,
+    pub size: WordOrTryte,
 }
+
+pub const BP_WORD: Register = Register {
+    num: RegisterNumber::BP,
+    size: WordOrTryte::Word
+};
+
+pub const SP_WORD: Register = Register {
+    num: RegisterNumber::SP,
+    size: WordOrTryte::Word
+};
+
+pub const BP_TRYTE: Register = Register {
+    num: RegisterNumber::BP,
+    size: WordOrTryte::Tryte
+};
+
+pub const SP_TRYTE: Register = Register {
+    num: RegisterNumber::SP,
+    size: WordOrTryte::Tryte
+};
 
 impl Register {
     /// size:
@@ -158,6 +183,8 @@ impl Index<RegisterNumber> for RegisterFile {
             RegisterNumber::R11 => &self.r11,
             RegisterNumber::R12 => &self.r12,
             RegisterNumber::R13 => &self.r13,
+            RegisterNumber::SP => &self.r12,
+            RegisterNumber::BP => &self.r13,
         }
     }
 }
@@ -192,6 +219,8 @@ impl IndexMut<RegisterNumber> for RegisterFile {
             RegisterNumber::R11 => &mut self.r11,
             RegisterNumber::R12 => &mut self.r12,
             RegisterNumber::R13 => &mut self.r13,
+            RegisterNumber::SP => &mut self.r12,
+            RegisterNumber::BP => &mut self.r13,
         }
     }
 }
@@ -212,6 +241,13 @@ impl RegisterFile {
         match reg.size {
             WordOrTryte::Word => Left(self[reg.num]),
             WordOrTryte::Tryte => Right(<Word as Into<[Tryte; 3]>>::into(self[reg.num])[0]),
+        }
+    }
+
+    pub fn get_word(&self, reg: Register) -> Word {
+        match self.get_value(reg) {
+            Left(word) => word,
+            Right(tryte) => tryte.into(),
         }
     }
 }

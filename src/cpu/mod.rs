@@ -1,15 +1,17 @@
 #![expect(unused)]
 use errors::CpuError;
 use jt1701isa::jt1701;
-use registers::{Register, RegisterFile};
+use registers::{Register, RegisterFile, WordOrTryte, SP_TRYTE, SP_WORD};
 use statusword::StatusWord;
 
 use crate::{
     stack::Stack,
     trits::Trit,
     tryte::Tryte,
-    word::Word,
+    word::{consts::{ONE_WORD, THREE_WORD}, Word},
 };
+
+use itertools::{Either, Either::{Left, Right}};
 
 pub mod errors;
 pub mod jt1701isa;
@@ -21,6 +23,7 @@ pub mod statusword;
 pub struct Cpu {
     // Done
     register_file: RegisterFile,
+    program_counter: Word,
     // Partial, can update as needed
     cpu_state_reg: StatusWord,
     saved_prog_status_reg: StatusWord,
@@ -49,83 +52,120 @@ impl jt1701 for Cpu {
     //==== CPU ====//
     /// Load Interrupt Handler Table
     fn lht(&mut self, register: Register) {
-        todo!()
+        if let Right(tryte) = self.register_file.get_value(register) {
+            self.cpu_state_reg.set_interrupt_vector(tryte);
+            return;
+        } 
+        panic!("deal with later")
     }
     /// Halt
     fn hlt(&mut self) {
-        todo!()
+        return;
     }
+    // TODO
     /// Interrupt
     fn int(&mut self, interrupt: Tryte) {
         todo!()
     }
     /// No Op
     fn nop(&self) {
-        todo!()
+        return;
     }
+    // TODO
     /// Wait For Interrupt
     fn wfi(&mut self) {
         todo!()
     }
     /// Stop Interrupts
     fn sti(&mut self) {
-        todo!()
+        self.cpu_state_reg.set_interrupt_enable(Trit::NOne);
     }
     /// Begin Interrupts
     fn bti(&mut self) {
-        todo!()
+        self.cpu_state_reg.set_interrupt_enable(Trit::POne);
     }
+    // TODO
     /// Returns from interrupt and restores status register
     fn rti(&mut self) {
         todo!()
     }
 
-    //== Loading Register to Memory ==//
+    //== Loading Register from Memory ==//
     /// dest = *(src + imm)
     fn ldri(&mut self, dest: Register, src: Register, imm: Tryte) {
-        todo!()
+        let val: Word = (self.register_file.get_word(src) + imm).result;
+
+        self.register_file.set_value(dest, self.stack.get_word(val));
     }
     /// dest = *(src0 + src1)
     fn ldrr(&mut self, dest: Register, src0: Register, src1: Register) {
-        todo!()
+        let src0: Word = self.register_file.get_word(src0);
+        let src1: Word = self.register_file.get_word(src1);
+        self.register_file.set_value(dest, self.stack.get_word((src0 + src1).result));
     }
     /// dest = *(src0 + src1 + imm)
     fn ldrri(&mut self, dest: Register, src0: Register, src1: Register, imm: Tryte) {
-        todo!()
+        let src0: Word = self.register_file.get_word(src0);
+        let src1: Word = self.register_file.get_word(src1);
+        self.register_file.set_value(dest, self.stack.get_word(((src0 + src1).result + <Tryte as Into<Word>>::into(imm)).result));
     }
     /// Word should have most sig. tryte be 0.
     /// dest = *(pc + imm)
     fn ldrpci(&mut self, dest: Register, imm: Word) {
-        todo!()
+        let val: Word = (self.program_counter + imm).result;
+        self.register_file.set_value(dest, self.stack.get_word(val));
     }
 
     //== Storing Register to Memory ==//
     /// *(src + imm) = dest
     fn stri(&mut self, dest: Register, src: Register, imm: Tryte) {
-        todo!()
+        let addr: Word = (self.register_file.get_word(src) + imm).result;
+
+        match dest.size {
+            WordOrTryte::Word => self.stack.insert_word(addr, self.register_file.get_value(dest).unwrap_left()),
+            WordOrTryte::Tryte => self.stack.insert(addr, self.register_file.get_value(dest).unwrap_right()),
+        }
     }
     /// *(src0 + src1) = dest
     fn strr(&mut self, dest: Register, src0: Register, src1: Register) {
-        todo!()
+        let addr: Word = (self.register_file.get_word(src0) + self.register_file.get_word(src1)).result;
+
+        match dest.size {
+            WordOrTryte::Word => self.stack.insert_word(addr, self.register_file.get_value(dest).unwrap_left()),
+            WordOrTryte::Tryte => self.stack.insert(addr, self.register_file.get_value(dest).unwrap_right()),
+        }
+
     }
     /// *(src0 + src1 + imm) = dest
     fn strri(&mut self, dest: Register, src0: Register, src1: Register, imm: Tryte) {
-        todo!()
+        let addr: Word = (self.register_file.get_word(src0) + self.register_file.get_word(src1)).result;
+        let addr: Word = (addr + imm).result;
+
+        match dest.size {
+            WordOrTryte::Word => self.stack.insert_word(addr, self.register_file.get_value(dest).unwrap_left()),
+            WordOrTryte::Tryte => self.stack.insert(addr, self.register_file.get_value(dest).unwrap_right()),
+        }
+
     }
     /// Word should have most sig. tryte be 0.
     /// *(pc + imm) = dest
     fn strpci(&mut self, dest: Register, imm: Word) {
-        todo!()
+        let addr: Word = (self.program_counter + imm).result;
+
+        match dest.size {
+            WordOrTryte::Word => self.stack.insert_word(addr, self.register_file.get_value(dest).unwrap_left()),
+            WordOrTryte::Tryte => self.stack.insert(addr, self.register_file.get_value(dest).unwrap_right()),
+        }
     }
 
     //== Moving ==//
     fn movrr(&mut self, dest: Register, src: Register) {
-        todo!()
+        self.register_file.set_value(dest, self.register_file.get_word(src));
     }
     /// imm will always be 2 trytes long, or 18 trits.
     /// To move a larger size, the assembler will create shifts and adds in order to do so
     fn movri(&mut self, dest: Register, imm: Word) {
-        todo!()
+        self.register_file.set_value(dest, imm);
     }
 
     //==== ALU ====//
@@ -143,18 +183,25 @@ impl jt1701 for Cpu {
     /// 0..=2: __:op _: control tryte (first rep reg type, second condition, third ???)
     /// 3..=5: ___: #imm
     /// 6..=8: %d, %s1, %s2
+    /// d = s0 + (s1 + imm)
     fn add(&mut self, dest: Register, imm: Tryte, src0: Register, src1: Register) {
-        todo!()
+        let tmp = (self.register_file.get_word(src1) + imm).result;
+        let val = (self.register_file.get_word(src0) + tmp).result;
+        self.register_file.set_value(dest, val);
     }
 
     /// d = s0 * (s1 + imm)
     fn mul(&mut self, dest: Register, imm: Tryte, src0: Register, src1: Register) {
-        todo!()
+        let tmp = (self.register_file.get_word(src1) + imm).result;
+        let val = (self.register_file.get_word(src0) * tmp);
+        self.register_file.set_value(dest, val);
     }
 
     /// d = s0 - (s1 + imm)
     fn sub(&mut self, dest: Register, imm: Tryte, src0: Register, src1: Register) {
-        todo!()
+        let tmp = (self.register_file.get_word(src1) + imm).result;
+        let val = (self.register_file.get_word(src0) - tmp).result;
+        self.register_file.set_value(dest, val);
     }
 
     /// d = s0 / (s1 + imm)
@@ -165,7 +212,11 @@ impl jt1701 for Cpu {
         src0: Register,
         src1: Register,
     ) -> Result<(), CpuError> {
-        todo!()
+        let tmp = (self.register_file.get_word(src1) + imm).result;
+        let val = (self.register_file.get_word(src0) / tmp)?;
+
+        self.register_file.set_value(dest, val);
+        Ok(())
     }
 
     /// d = s0 % (s1 + imm)
@@ -176,43 +227,42 @@ impl jt1701 for Cpu {
         src0: Register,
         src1: Register,
     ) -> Result<(), CpuError> {
-        todo!()
+        let tmp = (self.register_file.get_word(src1) + imm).result;
+        let val = (self.register_file.get_word(src0) % tmp)?;
+
+        self.register_file.set_value(dest, val);
+        Ok(())
     }
 
     //=== Trit ===//
     /// d = ~s
     fn not(&mut self, dest: Register, src: Register) {
-        todo!()
+        self.register_file.set_value(dest, !self.register_file.get_word(src));
     }
 
     // NOTE: Should left and right be different?
+    // FIXME: This can be bugged
     fn lsh(&mut self, dest: Register, src: Register, count: Tryte) {
-        todo!()
+        self.register_file.set_value(dest, self.register_file.get_word(src) << <Tryte as Into<isize>>::into(count) as usize);
     }
     fn rsh(&mut self, dest: Register, src: Register, count: Tryte) {
-        todo!()
+        self.register_file.set_value(dest, self.register_file.get_word(src) << <Tryte as Into<isize>>::into(count) as usize);
     }
 
-    // FIXME: Should these be separate?
     fn and_r(&mut self, dest: Register, src0: Register, src1: Register) {
-        todo!()
-    }
-    fn and_i(&mut self, dest: Register, src0: Register, mask: Word) {
-        todo!()
+        self.register_file.set_value(dest, self.register_file.get_word(src0) & self.register_file.get_word(src1));
     }
 
-    // FIXME: Should these be separate?
     fn or_r(&mut self, dest: Register, src0: Register, src1: Register) {
-        todo!()
-    }
-    fn or_i(&mut self, dest: Register, src0: Register, mask: Word) {
-        todo!()
+        self.register_file.set_value(dest, self.register_file.get_word(src0) | self.register_file.get_word(src1));
     }
 
-    // FIXME: Should these be separate?
+    // FIXME
     fn rot_r(&mut self, dest: Register, src0: Register, src1: Register) {
         todo!()
     }
+
+    // FIXME
     fn rot_i(&mut self, dest: Register, src0: Register, mask: Word) {
         todo!()
     }
@@ -220,11 +270,43 @@ impl jt1701 for Cpu {
     //== Stack ==//
     /// (r0 + r1) * r2
     fn push_r3(&mut self, r0: Register, r1: Register, r2: Register) {
-        todo!()
+        let val = (self.register_file.get_value(r0).map_either(|r| {
+            (r + self.register_file.get_value(r1).unwrap_left()).result
+        }, |r|
+            (r + self.register_file.get_value(r1).unwrap_right()).result
+        ));
+        let val = val.map_either(|r| {
+            (r * self.register_file.get_value(r2).unwrap_left())
+        }, |r|
+            (r * self.register_file.get_value(r2).unwrap_right())
+        );
+        
+        match val {
+            Left(word) => {
+                let curr = self.register_file.get_word(SP_WORD);
+                self.stack.insert_word(curr, word);
+                self.register_file.set_value(SP_WORD, (curr + THREE_WORD).result);
+            },
+            Right(tryte) => {
+                let curr = self.register_file.get_word(SP_WORD);
+                self.stack.insert(curr, tryte);
+                self.register_file.set_value(SP_WORD, (curr + ONE_WORD).result);
+            },
+        }
     }
-    fn push_im(&mut self, imm: Word) {
-        todo!()
+
+    fn push_im_word(&mut self, imm: Word) {
+        let curr = self.register_file.get_word(SP_WORD);
+        self.stack.insert_word(curr, imm);
+        self.register_file.set_value(SP_WORD, (curr + THREE_WORD).result);
     }
+
+    fn push_im_tryte(&mut self, imm: Tryte) {
+        let curr = self.register_file.get_word(SP_WORD);
+        self.stack.insert(curr, imm);
+        self.register_file.set_value(SP_WORD, (curr + ONE_WORD).result);
+    }
+
     /// *((r0 + r1) * (r2 + imm))
     fn push_mem(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
         todo!()

@@ -5,6 +5,7 @@ use crate::{trits::*, tryte::Tryte};
 pub mod binops;
 pub mod unops;
 pub mod tritops;
+pub mod consts;
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Word(pub(crate) [Trit; 27]);
