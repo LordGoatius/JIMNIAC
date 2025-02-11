@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
-    "jt1701",
+    "jt1701", "septivigntimal",
 ]
 
 [workspace.dependencies]
