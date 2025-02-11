@@ -1,10 +1,13 @@
 #![expect(unused)]
+use std::ops::{BitAnd, Not, Shl};
+
 use errors::CpuError;
 use jt1701isa::jt1701;
-use registers::{Register, RegisterFile, WordOrTryte, SP_TRYTE, SP_WORD};
+use registers::{BimapEitherOps, EitherAddResult, MapResult, Register, RegisterFile, WordOrTryte, SP_TRYTE, SP_WORD};
 use statusword::StatusWord;
 
 use crate::{
+    GetStatus,
     stack::Stack,
     trits::Trit,
     tryte::Tryte,
@@ -185,23 +188,39 @@ impl jt1701 for Cpu {
     /// 6..=8: %d, %s1, %s2
     /// d = s0 + (s1 + imm)
     fn add(&mut self, dest: Register, imm: Tryte, src0: Register, src1: Register) {
-        let tmp = (self.register_file.get_word(src1) + imm).result;
-        let val = (self.register_file.get_word(src0) + tmp).result;
-        self.register_file.set_value(dest, val);
+        let tmp = self.register_file.get_value(src1).bimap_add_tryte(imm).mapres();
+        let val = (self.register_file.get_value(src0).bimap_add(tmp)).bubbleres();
+        let EitherAddResult { result, carry } = val;
+
+        self.cpu_state_reg.set_carry_flag(carry);
+        self.cpu_state_reg.set_sign_flag(result.get_sign());
+        self.cpu_state_reg.set_parity_flag(result.get_parity());
+        self.register_file.set_value_either(dest, result);
     }
 
     /// d = s0 * (s1 + imm)
     fn mul(&mut self, dest: Register, imm: Tryte, src0: Register, src1: Register) {
-        let tmp = (self.register_file.get_word(src1) + imm).result;
-        let val = (self.register_file.get_word(src0) * tmp);
-        self.register_file.set_value(dest, val);
+        let tmp = self.register_file.get_value(src1).bimap_add_tryte(imm).mapres();
+        let val = (self.register_file.get_value(src0).bimap_mul(tmp));
+
+        self.cpu_state_reg.set_carry_flag(Trit::Zero);
+        self.cpu_state_reg.set_sign_flag(val.get_sign());
+        self.cpu_state_reg.set_parity_flag(val.get_parity());
+
+        self.register_file.set_value_either(dest, val);
     }
 
     /// d = s0 - (s1 + imm)
     fn sub(&mut self, dest: Register, imm: Tryte, src0: Register, src1: Register) {
-        let tmp = (self.register_file.get_word(src1) + imm).result;
-        let val = (self.register_file.get_word(src0) - tmp).result;
-        self.register_file.set_value(dest, val);
+        let tmp = self.register_file.get_value(src1).bimap_add_tryte(imm).mapres();
+        let val = (self.register_file.get_value(src0).bimap_sub(tmp)).bubbleres();
+        let EitherAddResult { result, carry } = val;
+
+        self.cpu_state_reg.set_carry_flag(carry);
+        self.cpu_state_reg.set_sign_flag(result.get_sign());
+        self.cpu_state_reg.set_parity_flag(result.get_parity());
+
+        self.register_file.set_value_either(dest, result);
     }
 
     /// d = s0 / (s1 + imm)
@@ -212,10 +231,13 @@ impl jt1701 for Cpu {
         src0: Register,
         src1: Register,
     ) -> Result<(), CpuError> {
-        let tmp = (self.register_file.get_word(src1) + imm).result;
-        let val = (self.register_file.get_word(src0) / tmp)?;
+        let tmp = self.register_file.get_value(src1).bimap_add_tryte(imm).mapres();
+        let val = (self.register_file.get_value(src0).bimap_div(tmp))?;
 
-        self.register_file.set_value(dest, val);
+        self.cpu_state_reg.set_carry_flag(Trit::Zero);
+        self.cpu_state_reg.set_sign_flag(val.get_sign());
+        self.cpu_state_reg.set_parity_flag(val.get_parity());
+        self.register_file.set_value_either(dest, val);
         Ok(())
     }
 
@@ -227,34 +249,39 @@ impl jt1701 for Cpu {
         src0: Register,
         src1: Register,
     ) -> Result<(), CpuError> {
-        let tmp = (self.register_file.get_word(src1) + imm).result;
-        let val = (self.register_file.get_word(src0) % tmp)?;
+        let tmp = self.register_file.get_value(src1).bimap_add_tryte(imm).mapres();
+        let val = (self.register_file.get_value(src0).bimap_mod(tmp))?;
 
-        self.register_file.set_value(dest, val);
+        self.cpu_state_reg.set_carry_flag(Trit::Zero);
+        self.cpu_state_reg.set_sign_flag(val.get_sign());
+        self.cpu_state_reg.set_parity_flag(val.get_parity());
+        self.register_file.set_value_either(dest, val);
         Ok(())
     }
 
     //=== Trit ===//
     /// d = ~s
     fn not(&mut self, dest: Register, src: Register) {
-        self.register_file.set_value(dest, !self.register_file.get_word(src));
+        self.register_file.set_value_either(dest, self.register_file.get_value(src).map_either(Not::not, Not::not));
     }
 
     // NOTE: Should left and right be different?
     // FIXME: This can be bugged
     fn lsh(&mut self, dest: Register, src: Register, count: Tryte) {
-        self.register_file.set_value(dest, self.register_file.get_word(src) << <Tryte as Into<isize>>::into(count) as usize);
+        let count = <Tryte as Into<isize>>::into(count) as usize;
+        self.register_file.set_value_either(dest, self.register_file.get_value(src).map_either(|x| x << count, |x| x << count));
     }
     fn rsh(&mut self, dest: Register, src: Register, count: Tryte) {
-        self.register_file.set_value(dest, self.register_file.get_word(src) << <Tryte as Into<isize>>::into(count) as usize);
+        let count = <Tryte as Into<isize>>::into(count) as usize;
+        self.register_file.set_value_either(dest, self.register_file.get_value(src).map_either(|x| x >> count, |x| x >> count));
     }
 
     fn and_r(&mut self, dest: Register, src0: Register, src1: Register) {
-        self.register_file.set_value(dest, self.register_file.get_word(src0) & self.register_file.get_word(src1));
+        self.register_file.set_value_either(dest, self.register_file.get_value(src0).bimap_and(self.register_file.get_value(src1)));
     }
 
     fn or_r(&mut self, dest: Register, src0: Register, src1: Register) {
-        self.register_file.set_value(dest, self.register_file.get_word(src0) | self.register_file.get_word(src1));
+        self.register_file.set_value_either(dest, self.register_file.get_value(src0).bimap_or(self.register_file.get_value(src1)));
     }
 
     // FIXME
@@ -270,16 +297,8 @@ impl jt1701 for Cpu {
     //== Stack ==//
     /// (r0 + r1) * r2
     fn push_r3(&mut self, r0: Register, r1: Register, r2: Register) {
-        let val = (self.register_file.get_value(r0).map_either(|r| {
-            (r + self.register_file.get_value(r1).unwrap_left()).result
-        }, |r|
-            (r + self.register_file.get_value(r1).unwrap_right()).result
-        ));
-        let val = val.map_either(|r| {
-            (r * self.register_file.get_value(r2).unwrap_left())
-        }, |r|
-            (r * self.register_file.get_value(r2).unwrap_right())
-        );
+        let val = self.register_file.get_value(r0).bimap_add(self.register_file.get_value(r1)).bubbleres().result;
+        let val = val.bimap_mul(self.register_file.get_value(r2));
         
         match val {
             Left(word) => {
@@ -308,8 +327,29 @@ impl jt1701 for Cpu {
     }
 
     /// *((r0 + r1) * (r2 + imm))
+    /// IDK ABOUT THIS
+    /// BUT
+    /// IF THE REGISTERS ARE WORD REGS THEN IT PUSHES THE WORD IN MEMORY AT THE RESULT
+    /// OTHERWISE IF ITS A TRYTE IT PUSHES A TRYTE
     fn push_mem(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
-        todo!()
+        let addr = self.register_file.get_value(r0).bimap_add(self.register_file.get_value(r1)).bubbleres().result;
+        let mul = self.register_file.get_value(r2).bimap_add_tryte(imm).bubbleres().result;
+        let addr = addr.bimap_mul(mul);
+
+        match addr {
+            Left(addr) => {
+                let val = self.stack.get_word(addr);
+                let curr = self.register_file.get_word(SP_WORD);
+                self.stack.insert_word(curr, val);
+                self.register_file.set_value(SP_WORD, (curr + THREE_WORD).result);
+            },
+            Right(addr) => {
+                let val = *self.stack.get(addr.into());
+                let curr = self.register_file.get_word(SP_WORD);
+                self.stack.insert(curr, val);
+                self.register_file.set_value(SP_WORD, (curr + ONE_WORD).result);
+            },
+        }
     }
 
     //== Branch ==//
@@ -319,11 +359,11 @@ impl jt1701 for Cpu {
     }
     /// Set Parity Trit
     fn spt(&mut self, r: Register) {
-        todo!()
+        self.cpu_state_reg.set_parity_flag(self.register_file.get_value(r).get_parity());
     }
     /// Set SignTrit
     fn sst(&mut self, r: Register) {
-        todo!()
+        self.cpu_state_reg.set_parity_flag(self.register_file.get_value(r).get_sign());
     }
 
     /// (r0 + r1) * r2

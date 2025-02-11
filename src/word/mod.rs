@@ -1,6 +1,6 @@
 use std::{hash::Hash, ops::{Deref, DerefMut}};
 
-use crate::{trits::*, tryte::Tryte};
+use crate::{trits::*, tryte::Tryte, GetStatus};
 
 pub mod binops;
 pub mod unops;
@@ -39,6 +39,16 @@ impl Word {
 
     pub(crate) fn set_tryte(&mut self, tryte: Tryte) {
         *self = [tryte, Tryte::default(), Tryte::default()].into();
+    }
+}
+
+impl GetStatus for Word {
+    fn get_sign(&self) -> Trit {
+        todo!()
+    }
+
+    fn get_parity(&self) -> Trit {
+        self[0]
     }
 }
 

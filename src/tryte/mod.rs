@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use crate::{trits::*, word::Word};
+use crate::{trits::*, word::Word, GetStatus};
 
 pub mod binops;
 pub mod tritops;
@@ -24,6 +24,16 @@ impl Tryte {
         } else {
             value
         }
+    }
+}
+
+impl GetStatus for Tryte {
+    fn get_sign(&self) -> Trit {
+        todo!()
+    }
+
+    fn get_parity(&self) -> Trit {
+        self[0]
     }
 }
 

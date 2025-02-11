@@ -1,13 +1,121 @@
-use std::ops::{Index, IndexMut};
+use std::{
+    fmt::Debug,
+    ops::{Add, Deref, DerefMut, Index, IndexMut},
+};
 
-use crate::trits::Trit;
-use crate::tryte::Tryte;
+use crate::{tryte::Tryte, GetStatus};
 use crate::word::Word;
+use crate::{trits::Trit, tryte::TryteAddResult, word::WordAddResult};
 
-use itertools::{Either, Either::{Left, Right}};
+use itertools::{
+    Either,
+    Either::{Left, Right},
+};
+
+use super::errors::CpuError;
+
+pub trait BimapEitherOps {
+    fn bimap_add(self, rhs: Self) -> Either<WordAddResult, TryteAddResult>;
+    fn bimap_add_tryte(self, rhs: Tryte) -> Either<WordAddResult, TryteAddResult>;
+    fn bimap_sub(self, rhs: Self) -> Either<WordAddResult, TryteAddResult>;
+    fn bimap_mul(self, rhs: Self) -> Either<Word, Tryte>;
+    fn bimap_div(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError>;
+    fn bimap_mod(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError>;
+    fn bimap_and(self, rhs: Self) -> Either<Word, Tryte>;
+    fn bimap_or(self, rhs: Self) -> Either<Word, Tryte>;
+}
+
+impl GetStatus for Either<Word, Tryte> {
+    fn get_sign(&self) -> Trit {
+        self.either(|x| x.get_sign(), |x| x.get_sign())
+    }
+
+    fn get_parity(&self) -> Trit {
+        self.either(|x| x.get_parity(), |x| x.get_parity())
+    }
+}
+
+pub struct EitherAddResult {
+    pub result: Either<Word, Tryte>,
+    pub carry: Trit
+}
+
+pub trait MapResult {
+    fn mapres(self) -> Either<Word, Tryte>;
+    fn bubbleres(self) -> EitherAddResult;
+}
+
+impl MapResult for Either<WordAddResult, TryteAddResult> {
+    fn mapres(self) -> Either<Word, Tryte> {
+        self.map_either(|r| r.result, |r| r.result)
+    }
+
+    fn bubbleres(self) -> EitherAddResult {
+        match self {
+            Left(res) => EitherAddResult { result: Left(res.result), carry: res.carry },
+            Right(res) => EitherAddResult { result: Right(res.result), carry: res.carry },
+        }
+    }
+}
+
+impl BimapEitherOps for Either<Word, Tryte> {
+    fn bimap_and(self, rhs: Self) -> Either<Word, Tryte> {
+        self.map_either(|r| r & rhs.unwrap_left(), |r| r & rhs.unwrap_right())
+    }
+
+    fn bimap_or(self, rhs: Self) -> Either<Word, Tryte> {
+        self.map_either(|r| r | rhs.unwrap_left(), |r| r | rhs.unwrap_right())
+    }
+
+    fn bimap_add(self, rhs: Self) -> Either<WordAddResult, TryteAddResult> {
+        self.map_either(|r| r + rhs.unwrap_left(), |r| r + rhs.unwrap_right())
+    }
+
+    fn bimap_add_tryte(self, rhs: Tryte) -> Either<WordAddResult, TryteAddResult> {
+        self.map_either(|r| r + rhs, |r| r + rhs)
+    }
+
+    fn bimap_sub(self, rhs: Self) -> Either<WordAddResult, TryteAddResult> {
+        self.map_either(|r| r - rhs.unwrap_left(), |r| r - rhs.unwrap_right())
+    }
+
+    fn bimap_mul(self, rhs: Self) -> Either<Word, Tryte> {
+        self.map_either(|r| r * rhs.unwrap_left(), |r| r * rhs.unwrap_right())
+    }
+
+    fn bimap_div(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError> {
+        let temp = self.map_either(|r| (r / rhs.unwrap_left()), |r| (r / rhs.unwrap_right()));
+
+        match temp {
+            Left(val) => match val {
+                Ok(word) => Ok(Left(word)),
+                Err(err) => Err(err),
+            },
+            Right(val) => match val {
+                Ok(tryte) => Ok(Right(tryte)),
+                Err(err) => Err(err),
+            },
+        }
+    }
+
+    fn bimap_mod(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError> {
+        let temp = self.map_either(|r| (r % rhs.unwrap_left()), |r| (r % rhs.unwrap_right()));
+
+        match temp {
+            Left(val) => match val {
+                Ok(word) => Ok(Left(word)),
+                Err(err) => Err(err),
+            },
+            Right(val) => match val {
+                Ok(tryte) => Ok(Right(tryte)),
+                Err(err) => Err(err),
+            },
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
-pub(super) enum WordOrTryte {
+pub(crate) enum WordOrTryte {
     Word,
     Tryte,
 }
@@ -47,28 +155,28 @@ pub enum RegisterNumber {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Register {
-    pub num: RegisterNumber,
-    pub size: WordOrTryte,
+    pub(crate) num: RegisterNumber,
+    pub(crate) size: WordOrTryte,
 }
 
 pub const BP_WORD: Register = Register {
     num: RegisterNumber::BP,
-    size: WordOrTryte::Word
+    size: WordOrTryte::Word,
 };
 
 pub const SP_WORD: Register = Register {
     num: RegisterNumber::SP,
-    size: WordOrTryte::Word
+    size: WordOrTryte::Word,
 };
 
 pub const BP_TRYTE: Register = Register {
     num: RegisterNumber::BP,
-    size: WordOrTryte::Tryte
+    size: WordOrTryte::Tryte,
 };
 
 pub const SP_TRYTE: Register = Register {
     num: RegisterNumber::SP,
-    size: WordOrTryte::Tryte
+    size: WordOrTryte::Tryte,
 };
 
 impl Register {
@@ -237,10 +345,38 @@ impl RegisterFile {
         }
     }
 
+    pub(crate) fn set_value_either(&mut self, reg: Register, val: Either<Word, Tryte>) {
+        match reg.size {
+            WordOrTryte::Word => match val {
+                Left(word) => {
+                    self[reg.num] = word;
+                }
+                Right(tryte) => {
+                    self[reg.num] = tryte.into();
+                }
+            },
+            WordOrTryte::Tryte => match val {
+                Left(word) => {
+                    self[reg.num] = <Word as Into<[Tryte; 3]>>::into(word)[0].into();
+                }
+                Right(tryte) => {
+                    self[reg.num] = tryte.into();
+                }
+            },
+        }
+    }
+
     pub(crate) fn get_value(&self, reg: Register) -> Either<Word, Tryte> {
         match reg.size {
             WordOrTryte::Word => Left(self[reg.num]),
             WordOrTryte::Tryte => Right(<Word as Into<[Tryte; 3]>>::into(self[reg.num])[0]),
+        }
+    }
+
+    pub fn get_tryte(&self, reg: Register) -> Tryte {
+        match self.get_value(reg) {
+            Left(word) => <Word as Into<[Tryte; 3]>>::into(word)[0],
+            Right(tryte) => tryte,
         }
     }
 
@@ -263,7 +399,10 @@ pub mod test {
     fn reg_file_test() {
         let mut reg_file = RegisterFile::default();
 
-        reg_file.set_value(Register::to_register(Trit::Zero, [Trit::POne, Trit::Zero, Trit::NOne]), Word([Trit::POne; 27]));
+        reg_file.set_value(
+            Register::to_register(Trit::Zero, [Trit::POne, Trit::Zero, Trit::NOne]),
+            Word([Trit::POne; 27]),
+        );
 
         assert_eq!(
             reg_file.get_value(Register::to_register(
@@ -273,7 +412,10 @@ pub mod test {
             Left(Word([Trit::POne; 27]))
         );
 
-        reg_file.set_value(Register::to_register(Trit::NOne, [Trit::POne, Trit::Zero, Trit::NOne]), Tryte([Trit::POne; 9]).into());
+        reg_file.set_value(
+            Register::to_register(Trit::NOne, [Trit::POne, Trit::Zero, Trit::NOne]),
+            Tryte([Trit::POne; 9]).into(),
+        );
 
         assert_eq!(
             reg_file.get_value(Register::to_register(
