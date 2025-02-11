@@ -86,6 +86,12 @@ impl From<Word> for [Tryte; 3] {
     }
 }
 
+impl From<Word> for [[Trit; 3]; 9] {
+    fn from(value: Word) -> Self {
+        unsafe { std::mem::transmute::<Word, [[Trit; 3]; 9]>(value) }
+    }
+}
+
 impl From<Word> for isize {
     fn from(value: Word) -> Self {
         value
@@ -166,5 +172,6 @@ pub mod test {
         assert_eq!(std::mem::size_of::<Word>(), std::mem::size_of::<[Tryte; 3]>());
         assert_eq!(std::mem::size_of::<[[Trit; 9]; 3]>(), std::mem::size_of::<[Tryte; 3]>());
         assert_eq!(std::mem::size_of::<[[Trit; 9]; 3]>(), std::mem::size_of::<Word>());
+        assert_eq!(std::mem::size_of::<[[Trit; 3]; 9]>(), std::mem::size_of::<Word>());
     }
 }
