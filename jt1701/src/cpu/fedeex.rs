@@ -618,3 +618,16 @@ impl Cpu {
         }
     }
 }
+
+#[cfg(test)]
+pub mod test {
+    use crate::{cpu::{jt1701isa::{self, jt1701}, consts::*, Cpu}, trits::Trit, word::Word};
+
+    #[test]
+    fn fedeex() {
+        let mut cpu = Cpu::default();
+        cpu.program_counter = Word([Trit::NOne; 27]);
+
+        // cpu.movri(dest, imm);
+    }
+}

@@ -30,6 +30,7 @@ pub mod errors;
 pub mod fedeex;
 pub mod jt1701isa;
 pub mod macros;
+pub mod consts;
 pub mod ports;
 pub mod registers;
 pub mod statusword;
@@ -554,7 +555,7 @@ impl jt1701 for Cpu {
         let EitherAddResult { result, carry } = self
             .register_file
             .get_value(r0)
-            .bimap_add(self.register_file.get_value(r1))
+            .bimap_sub(self.register_file.get_value(r1))
             .bubbleres();
         self.cpu_state_reg.set_carry_flag(carry);
         self.cpu_state_reg.set_parity_flag(result.get_parity());

@@ -14,7 +14,7 @@ use itertools::{
 
 use super::errors::CpuError;
 #[derive(Debug, Clone, Copy)]
-pub(crate) enum WordOrTryte {
+pub enum WordOrTryte {
     Word,
     Tryte,
 }
