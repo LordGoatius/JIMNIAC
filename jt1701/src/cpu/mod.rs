@@ -63,6 +63,10 @@ impl Cpu {
             addr = (addr + Trit::POne).result;
         }
     }
+
+    fn inc_pc(&mut self) {
+        self.program_counter = (self.program_counter + THREE_WORD).result;
+    }
 }
 
 impl jt1701 for Cpu {
@@ -536,7 +540,7 @@ impl jt1701 for Cpu {
             WordOrTryte::Word => {
                 let val = self.stack.get_word(self.register_file.get_word(SP_WORD));
                 self.register_file.set_value(dest, val);
-            }, 
+            }
             WordOrTryte::Tryte => {
                 let val = *self.stack.get(self.register_file.get_word(SP_WORD));
                 self.register_file.set_value_either(dest, Right(val));
@@ -579,11 +583,11 @@ impl jt1701 for Cpu {
             .result;
         let val = val.bimap_mul(self.register_file.get_value(r2));
 
-        self.register_file.set_value(SP_WORD, val.as_word());
+        self.program_counter = val.as_word()
     }
 
     fn br_i(&mut self, imm: Word) {
-        self.register_file.set_value(SP_WORD, imm);
+        self.program_counter = imm;
     }
 
     /// *((r0 + r1) * (r2 + imm))
@@ -604,12 +608,13 @@ impl jt1701 for Cpu {
 
         let val = self.stack.get_word(val.as_word());
 
-        self.register_file.set_value(SP_WORD, val);
+        self.program_counter = val;
     }
 
     /// (r0 + r1) * r2
     fn bne_r(&mut self, r0: Register, r1: Register, r2: Register) {
-        if (self.cpu_state_reg.get_sign_flag() != Trit::Zero) {
+        if (self.cpu_state_reg.get_sign_flag() == Trit::Zero) {
+            self.inc_pc();
             return;
         }
 
@@ -621,20 +626,22 @@ impl jt1701 for Cpu {
             .result;
         let val = val.bimap_mul(self.register_file.get_value(r2));
 
-        self.register_file.set_value(SP_WORD, val.as_word());
+        self.program_counter = val.as_word()
     }
 
     fn bne_i(&mut self, imm: Word) {
-        if (self.cpu_state_reg.get_sign_flag() != Trit::Zero) {
+        if (self.cpu_state_reg.get_sign_flag() == Trit::Zero) {
+            self.inc_pc();
             return;
         }
 
-        self.register_file.set_value(SP_WORD, imm);
+        self.program_counter = imm;
     }
 
     /// *((r0 + r1) * (r2 + imm))
     fn bne_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
-        if (self.cpu_state_reg.get_sign_flag() != Trit::Zero) {
+        if (self.cpu_state_reg.get_sign_flag() == Trit::Zero) {
+            self.inc_pc();
             return;
         }
 
@@ -654,12 +661,13 @@ impl jt1701 for Cpu {
 
         let val = self.stack.get_word(val.as_word());
 
-        self.register_file.set_value(SP_WORD, val);
+        self.program_counter = val;
     }
 
     /// (r0 + r1) * r2
     fn bgt_r(&mut self, r0: Register, r1: Register, r2: Register) {
-        if (self.cpu_state_reg.get_sign_flag() == Trit::POne) {
+        if (self.cpu_state_reg.get_sign_flag() != Trit::POne) {
+            self.inc_pc();
             return;
         }
 
@@ -671,20 +679,22 @@ impl jt1701 for Cpu {
             .result;
         let val = val.bimap_mul(self.register_file.get_value(r2));
 
-        self.register_file.set_value(SP_WORD, val.as_word());
+        self.program_counter = val.as_word()
     }
 
     fn bgt_i(&mut self, imm: Word) {
-        if (self.cpu_state_reg.get_sign_flag() == Trit::POne) {
+        if (self.cpu_state_reg.get_sign_flag() != Trit::POne) {
+            self.inc_pc();
             return;
         }
 
-        self.register_file.set_value(SP_WORD, imm);
+        self.program_counter = imm;
     }
 
     /// *((r0 + r1) * (r2 + imm))
     fn bgt_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
-        if (self.cpu_state_reg.get_sign_flag() == Trit::POne) {
+        if (self.cpu_state_reg.get_sign_flag() != Trit::POne) {
+            self.inc_pc();
             return;
         }
 
@@ -704,12 +714,13 @@ impl jt1701 for Cpu {
 
         let val = self.stack.get_word(val.as_word());
 
-        self.register_file.set_value(SP_WORD, val);
+        self.program_counter = val;
     }
 
     /// (r0 + r1) * r2
     fn blt_r(&mut self, r0: Register, r1: Register, r2: Register) {
-        if (self.cpu_state_reg.get_sign_flag() == Trit::NOne) {
+        if (self.cpu_state_reg.get_sign_flag() != Trit::NOne) {
+            self.inc_pc();
             return;
         }
 
@@ -721,20 +732,22 @@ impl jt1701 for Cpu {
             .result;
         let val = val.bimap_mul(self.register_file.get_value(r2));
 
-        self.register_file.set_value(SP_WORD, val.as_word());
+        self.program_counter = val.as_word()
     }
 
     fn blt_i(&mut self, imm: Word) {
-        if (self.cpu_state_reg.get_sign_flag() == Trit::NOne) {
+        if (self.cpu_state_reg.get_sign_flag() != Trit::NOne) {
+            self.inc_pc();
             return;
         }
 
-        self.register_file.set_value(SP_WORD, imm);
+        self.program_counter = imm;
     }
 
     /// *((r0 + r1) * (r2 + imm))
     fn blt_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
-        if (self.cpu_state_reg.get_sign_flag() == Trit::NOne) {
+        if (self.cpu_state_reg.get_sign_flag() != Trit::NOne) {
+            self.inc_pc();
             return;
         }
 
@@ -754,12 +767,13 @@ impl jt1701 for Cpu {
 
         let val = self.stack.get_word(val.as_word());
 
-        self.register_file.set_value(SP_WORD, val);
+        self.program_counter = val;
     }
 
     /// (r0 + r1) * r2
     fn beq_r(&mut self, r0: Register, r1: Register, r2: Register) {
-        if (self.cpu_state_reg.get_sign_flag() == Trit::Zero) {
+        if (self.cpu_state_reg.get_sign_flag() != Trit::Zero) {
+            self.inc_pc();
             return;
         }
 
@@ -771,20 +785,22 @@ impl jt1701 for Cpu {
             .result;
         let val = val.bimap_mul(self.register_file.get_value(r2));
 
-        self.register_file.set_value(SP_WORD, val.as_word());
+        self.program_counter = val.as_word()
     }
 
     fn beq_i(&mut self, imm: Word) {
-        if (self.cpu_state_reg.get_sign_flag() == Trit::Zero) {
+        if (self.cpu_state_reg.get_sign_flag() != Trit::Zero) {
+            self.inc_pc();
             return;
         }
 
-        self.register_file.set_value(SP_WORD, imm);
+        self.program_counter = imm;
     }
 
     /// *((r0 + r1) * (r2 + imm))
     fn beq_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
-        if (self.cpu_state_reg.get_sign_flag() == Trit::Zero) {
+        if (self.cpu_state_reg.get_sign_flag() != Trit::Zero) {
+            self.inc_pc();
             return;
         }
 
@@ -804,13 +820,14 @@ impl jt1701 for Cpu {
 
         let val = self.stack.get_word(val.as_word());
 
-        self.register_file.set_value(SP_WORD, val);
+        self.program_counter = val;
     }
 
     /// (r0 + r1) * r2
     fn bgeq_r(&mut self, r0: Register, r1: Register, r2: Register) {
         let sign = self.cpu_state_reg.get_sign_flag();
-        if (sign == Trit::Zero || sign == Trit::POne) {
+        if (sign == Trit::NOne) {
+            self.inc_pc();
             return;
         }
 
@@ -822,22 +839,24 @@ impl jt1701 for Cpu {
             .result;
         let val = val.bimap_mul(self.register_file.get_value(r2));
 
-        self.register_file.set_value(SP_WORD, val.as_word());
+        self.program_counter = val.as_word()
     }
 
     fn bgeq_i(&mut self, imm: Word) {
         let sign = self.cpu_state_reg.get_sign_flag();
-        if (sign == Trit::Zero || sign == Trit::POne) {
+        if (sign == Trit::NOne) {
+            self.inc_pc();
             return;
         }
 
-        self.register_file.set_value(SP_WORD, imm);
+        self.program_counter = imm;
     }
 
     /// *((r0 + r1) * (r2 + imm))
     fn bgeq_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
         let sign = self.cpu_state_reg.get_sign_flag();
-        if (sign == Trit::Zero || sign == Trit::POne) {
+        if (sign == Trit::NOne) {
+            self.inc_pc();
             return;
         }
 
@@ -857,13 +876,14 @@ impl jt1701 for Cpu {
 
         let val = self.stack.get_word(val.as_word());
 
-        self.register_file.set_value(SP_WORD, val);
+        self.program_counter = val;
     }
 
     /// (r0 + r1) * r2
     fn bleq_r(&mut self, r0: Register, r1: Register, r2: Register) {
         let sign = self.cpu_state_reg.get_sign_flag();
-        if (sign == Trit::Zero || sign == Trit::NOne) {
+        if (sign == Trit::POne) {
+            self.inc_pc();
             return;
         }
 
@@ -875,22 +895,24 @@ impl jt1701 for Cpu {
             .result;
         let val = val.bimap_mul(self.register_file.get_value(r2));
 
-        self.register_file.set_value(SP_WORD, val.as_word());
+        self.program_counter = val.as_word()
     }
 
     fn bleq_i(&mut self, imm: Word) {
         let sign = self.cpu_state_reg.get_sign_flag();
-        if (sign == Trit::Zero || sign == Trit::NOne) {
+        if (sign == Trit::POne) {
+            self.inc_pc();
             return;
         }
 
-        self.register_file.set_value(SP_WORD, imm);
+        self.program_counter = imm;
     }
 
     /// *((r0 + r1) * (r2 + imm))
     fn bleq_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
         let sign = self.cpu_state_reg.get_sign_flag();
-        if (sign == Trit::Zero || sign == Trit::NOne) {
+        if (sign == Trit::POne) {
+            self.inc_pc();
             return;
         }
 
@@ -910,13 +932,14 @@ impl jt1701 for Cpu {
 
         let val = self.stack.get_word(val.as_word());
 
-        self.register_file.set_value(SP_WORD, val);
+        self.program_counter = val;
     }
 
     /// (r0 + r1) * r2
     fn bofn_r(&mut self, r0: Register, r1: Register, r2: Register) {
         let sign = self.cpu_state_reg.get_carry_flag();
-        if (sign == Trit::NOne) {
+        if (sign != Trit::NOne) {
+            self.inc_pc();
             return;
         }
 
@@ -928,21 +951,23 @@ impl jt1701 for Cpu {
             .result;
         let val = val.bimap_mul(self.register_file.get_value(r2));
 
-        self.register_file.set_value(SP_WORD, val.as_word());
+        self.program_counter = val.as_word()
     }
 
     fn bofn_i(&mut self, imm: Word) {
         let sign = self.cpu_state_reg.get_carry_flag();
-        if (sign == Trit::NOne) {
+        if (sign != Trit::NOne) {
+            self.inc_pc();
             return;
         }
 
-        self.register_file.set_value(SP_WORD, imm);
+        self.program_counter = imm;
     }
     /// *((r0 + r1) * (r2 + imm))
     fn bofn_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
         let sign = self.cpu_state_reg.get_carry_flag();
-        if (sign == Trit::NOne) {
+        if (sign != Trit::NOne) {
+            self.inc_pc();
             return;
         }
 
@@ -962,13 +987,14 @@ impl jt1701 for Cpu {
 
         let val = self.stack.get_word(val.as_word());
 
-        self.register_file.set_value(SP_WORD, val);
+        self.program_counter = val;
     }
 
     /// (r0 + r1) * r2
     fn bofz_r(&mut self, r0: Register, r1: Register, r2: Register) {
         let sign = self.cpu_state_reg.get_carry_flag();
-        if (sign == Trit::Zero) {
+        if (sign != Trit::Zero) {
+            self.inc_pc();
             return;
         }
 
@@ -980,23 +1006,24 @@ impl jt1701 for Cpu {
             .result;
         let val = val.bimap_mul(self.register_file.get_value(r2));
 
-        self.register_file.set_value(SP_WORD, val.as_word());
+        self.program_counter = val.as_word()
     }
 
     fn bofz_i(&mut self, imm: Word) {
         let sign = self.cpu_state_reg.get_carry_flag();
-        if (sign == Trit::Zero) {
+        if (sign != Trit::Zero) {
+            self.inc_pc();
             return;
         }
 
-        self.register_file.set_value(SP_WORD, imm);
-        todo!()
+        self.program_counter = imm;
     }
 
     /// *((r0 + r1) * (r2 + imm))
     fn bofz_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
         let sign = self.cpu_state_reg.get_carry_flag();
-        if (sign == Trit::Zero) {
+        if (sign != Trit::Zero) {
+            self.inc_pc();
             return;
         }
 
@@ -1016,13 +1043,14 @@ impl jt1701 for Cpu {
 
         let val = self.stack.get_word(val.as_word());
 
-        self.register_file.set_value(SP_WORD, val);
+        self.program_counter = val;
     }
 
     /// (r0 + r1) * r2
     fn bofp_r(&mut self, r0: Register, r1: Register, r2: Register) {
         let sign = self.cpu_state_reg.get_carry_flag();
-        if (sign == Trit::POne) {
+        if (sign != Trit::POne) {
+            self.inc_pc();
             return;
         }
 
@@ -1034,22 +1062,24 @@ impl jt1701 for Cpu {
             .result;
         let val = val.bimap_mul(self.register_file.get_value(r2));
 
-        self.register_file.set_value(SP_WORD, val.as_word());
+        self.program_counter = val.as_word()
     }
 
     fn bofp_i(&mut self, imm: Word) {
         let sign = self.cpu_state_reg.get_carry_flag();
-        if (sign == Trit::POne) {
+        if (sign != Trit::POne) {
+            self.inc_pc();
             return;
         }
 
-        self.register_file.set_value(SP_WORD, imm);
+        self.program_counter = imm;
     }
 
     /// *((r0 + r1) * (r2 + imm))
     fn bofp_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
         let sign = self.cpu_state_reg.get_carry_flag();
-        if (sign == Trit::POne) {
+        if (sign != Trit::POne) {
+            self.inc_pc();
             return;
         }
 
@@ -1069,13 +1099,14 @@ impl jt1701 for Cpu {
 
         let val = self.stack.get_word(val.as_word());
 
-        self.register_file.set_value(SP_WORD, val);
+        self.program_counter = val;
     }
 
     /// (r0 + r1) * r2
     fn bpn_r(&mut self, r0: Register, r1: Register, r2: Register) {
         let sign = self.cpu_state_reg.get_parity_flag();
         if (sign != Trit::NOne) {
+            self.inc_pc();
             return;
         }
 
@@ -1087,22 +1118,24 @@ impl jt1701 for Cpu {
             .result;
         let val = val.bimap_mul(self.register_file.get_value(r2));
 
-        self.register_file.set_value(SP_WORD, val.as_word());
+        self.program_counter = val.as_word()
     }
 
     fn bpn_i(&mut self, imm: Word) {
         let sign = self.cpu_state_reg.get_parity_flag();
         if (sign != Trit::NOne) {
+            self.inc_pc();
             return;
         }
 
-        self.register_file.set_value(SP_WORD, imm);
+        self.program_counter = imm;
     }
 
     /// *((r0 + r1) * (r2 + imm))
     fn bpn_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
         let sign = self.cpu_state_reg.get_parity_flag();
         if (sign != Trit::NOne) {
+            self.inc_pc();
             return;
         }
 
@@ -1122,13 +1155,14 @@ impl jt1701 for Cpu {
 
         let val = self.stack.get_word(val.as_word());
 
-        self.register_file.set_value(SP_WORD, val);
+        self.program_counter = val;
     }
 
     /// (r0 + r1) * r2
     fn bpz_r(&mut self, r0: Register, r1: Register, r2: Register) {
         let sign = self.cpu_state_reg.get_parity_flag();
         if (sign != Trit::Zero) {
+            self.inc_pc();
             return;
         }
 
@@ -1140,22 +1174,24 @@ impl jt1701 for Cpu {
             .result;
         let val = val.bimap_mul(self.register_file.get_value(r2));
 
-        self.register_file.set_value(SP_WORD, val.as_word());
+        self.program_counter = val.as_word()
     }
 
     fn bpz_i(&mut self, imm: Word) {
         let sign = self.cpu_state_reg.get_parity_flag();
         if (sign != Trit::Zero) {
+            self.inc_pc();
             return;
         }
 
-        self.register_file.set_value(SP_WORD, imm);
+        self.program_counter = imm;
     }
 
     /// *((r0 + r1) * (r2 + imm))
     fn bpz_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
         let sign = self.cpu_state_reg.get_parity_flag();
         if (sign != Trit::Zero) {
+            self.inc_pc();
             return;
         }
 
@@ -1175,13 +1211,14 @@ impl jt1701 for Cpu {
 
         let val = self.stack.get_word(val.as_word());
 
-        self.register_file.set_value(SP_WORD, val);
+        self.program_counter = val;
     }
 
     /// (r0 + r1) * r2
     fn bpp_r(&mut self, r0: Register, r1: Register, r2: Register) {
         let sign = self.cpu_state_reg.get_parity_flag();
         if (sign != Trit::POne) {
+            self.inc_pc();
             return;
         }
 
@@ -1193,22 +1230,24 @@ impl jt1701 for Cpu {
             .result;
         let val = val.bimap_mul(self.register_file.get_value(r2));
 
-        self.register_file.set_value(SP_WORD, val.as_word());
+        self.program_counter = val.as_word()
     }
 
     fn bpp_i(&mut self, imm: Word) {
         let sign = self.cpu_state_reg.get_parity_flag();
         if (sign != Trit::POne) {
+            self.inc_pc();
             return;
         }
 
-        self.register_file.set_value(SP_WORD, imm);
+        self.program_counter = imm;
     }
 
     /// *((r0 + r1) * (r2 + imm))
     fn bpp_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte) {
         let sign = self.cpu_state_reg.get_parity_flag();
         if (sign != Trit::POne) {
+            self.inc_pc();
             return;
         }
 
@@ -1228,7 +1267,7 @@ impl jt1701 for Cpu {
 
         let val = self.stack.get_word(val.as_word());
 
-        self.register_file.set_value(SP_WORD, val);
+        self.program_counter = val;
     }
 
     // TODO
