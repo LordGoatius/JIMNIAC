@@ -140,6 +140,11 @@ impl Cpu {
             [O, R, [t, _, _], i0, i1, i2, d, r0, r1] => Instruction::ORR((t, d).into(), (t, r0).into(), (t, r1).into()),
             [R, O, [t, Trit::POne, _], i0, i1, i2, d, r0, r1] => Instruction::ROTR((t, d).into(), (t, r0).into(), (t, r1).into()),
             [R, O, [t, Trit::NOne, _], i0, i1, i2, d, r0, r1] => Instruction::ROTI((t, d).into(), (t, r0).into(), todo!()),
+            // Stack
+            [P, R, [t, _, _], r0, r1, r2, _, _, _] => Instruction::PUSHR3((t, r0).into(), (t, r1).into(), (t, r2).into()),
+            [P, I, [t, _, _], i0, i1, i2, i3, i4, i5] => Instruction::PUSHIMWORD([i0, i1, i2, i3, i4, i5, ZERO, ZERO, ZERO].into()),
+            [P, T, [t, _, _], i0, i1, i2, ZERO, ZERO, ZERO] => Instruction::PUSHIMTRYTE([i0, i1, i2].into()),
+            [P, M, [t, _, _], d, r0, r1, i0, i1, i2] => Instruction::PUSHMEM((t, d).into(), (t, r0).into(), (t, r1).into(), [i0, i1, i2].into()),
 
 
             // [_, _, _, _, _, _, _, _, _] => Instruction::
