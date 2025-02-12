@@ -103,6 +103,8 @@ pub trait jt1701 {
     /// *((r0 + r1) * (r2 + imm))
     fn push_mem(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
 
+    fn pop(&mut self, dest: Register);
+
     //== Branch ==//
     /// Compare 2 registers
     fn cmp(&mut self, r0: Register, r1: Register);
@@ -192,8 +194,7 @@ pub trait jt1701 {
 
     //== Ports ==//
     fn in_r(&mut self, dest: Register, loc: Register);
-    fn in_i(&mut self, dest: Register, loc: Word);
 
-    fn out_r(&mut self, dest: Register, loc: Register);
-    fn out_i(&mut self, dest: Register, loc: Word);
+    fn out_r(&mut self, dest: Register, val: Register);
+    fn out_i(&mut self, dest: Register, val: Word);
 }

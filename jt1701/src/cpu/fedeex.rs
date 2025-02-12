@@ -42,6 +42,7 @@ pub enum Instruction {
     PUSHIMWORD(Word),
     PUSHIMTRYTE(Tryte),
     PUSHMEM(Register, Register, Register, Tryte),
+    POP(Register),
     CMP(Register, Register),
     SPT(Register),
     SST(Register),
@@ -85,7 +86,6 @@ pub enum Instruction {
     BPPI(Word),
     BPPM(Register, Register, Register, Tryte),
     INR(Register, Register),
-    INI(Register, Word),
     OUTR(Register, Register),
     OUTI(Register, Word),
 }
@@ -145,9 +145,118 @@ impl Cpu {
             [P, I, [t, _, _], i0, i1, i2, i3, i4, i5] => Instruction::PUSHIMWORD([i0, i1, i2, i3, i4, i5, ZERO, ZERO, ZERO].into()),
             [P, T, [t, _, _], i0, i1, i2, ZERO, ZERO, ZERO] => Instruction::PUSHIMTRYTE([i0, i1, i2].into()),
             [P, M, [t, _, _], d, r0, r1, i0, i1, i2] => Instruction::PUSHMEM((t, d).into(), (t, r0).into(), (t, r1).into(), [i0, i1, i2].into()),
+            [P, P, [t, _, _], d, _, _, _, _, _] => Instruction::POP((t, d).into()),
+            [C, P, [t, _, _], r0, r1, _ ,_ ,_ ,_] => Instruction::CMP((t, r0).into(), (t, r1).into()),
+            [C, M, [t, _, _], r, _, _ ,_ ,_ ,_] => Instruction::SPT((t, r).into()),
+            [C, S, [t, _, _], r, _, _ ,_ ,_ ,_] => Instruction::SST((t, r).into()),
+            [B, ZERO, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BRR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm 
+                Trit::Zero => Instruction::BRI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BRM((t, a).into(), (t, b).into(), (t, c).into(), [d, e, f].into()),
+            },
+            [B, A, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BNER((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm 
+                Trit::Zero => Instruction::BNEI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BNEM((t, a).into(), (t, b).into(), (t, c).into(), [d, e, f].into()),
+            },
+            [B, B, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BGTR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm 
+                Trit::Zero => Instruction::BGTI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BGTM((t, a).into(), (t, b).into(), (t, c).into(), [d, e, f].into()),
+            },
+            [B, C, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BLTR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm 
+                Trit::Zero => Instruction::BLTI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BLTM((t, a).into(), (t, b).into(), (t, c).into(), [d, e, f].into()),
+            },
+            [B, D, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BEQR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm 
+                Trit::Zero => Instruction::BEQI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BEQM((t, a).into(), (t, b).into(), (t, c).into(), [d, e, f].into()),
+            },
+            [B, E, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BGEQR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm 
+                Trit::Zero => Instruction::BGEQI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BGEQM((t, a).into(), (t, b).into(), (t, c).into(), [d, e, f].into()),
+            },
+            [B, F, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BLEQR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm 
+                Trit::Zero => Instruction::BLEQI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BLEQM((t, a).into(), (t, b).into(), (t, c).into(), [d, e, f].into()),
+            },
+            [B, G, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BOFNR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm 
+                Trit::Zero => Instruction::BOFNI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BOFNM((t, a).into(), (t, b).into(), (t, c).into(), [d, e, f].into()),
+            },
+            [B, H, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BOFZR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm 
+                Trit::Zero => Instruction::BOFZI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BOFZM((t, a).into(), (t, b).into(), (t, c).into(), [d, e, f].into()),
+            },
+            [B, I, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BOFPR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm 
+                Trit::Zero => Instruction::BOFPI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BOFPM((t, a).into(), (t, b).into(), (t, c).into(), [d, e, f].into()),
+            },
+            [B, J, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BPNR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm 
+                Trit::Zero => Instruction::BPNI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BPNM((t, a).into(), (t, b).into(), (t, c).into(), [d, e, f].into()),
+            },
+            [B, K, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BPZR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm 
+                Trit::Zero => Instruction::BPZI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BPZM((t, a).into(), (t, b).into(), (t, c).into(), [d, e, f].into()),
+            },
+            [B, L, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BPPR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm 
+                Trit::Zero => Instruction::BPPI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BPPM((t, a).into(), (t, b).into(), (t, c).into(), [d, e, f].into()),
+            },
+            [I, R, [t, _, _], r0, r1, _, _, _, _] => Instruction::INR((t, r0).into(), (t, r1).into()),
+            [O, R, [t, _, _], r0, r1, _, _, _, _] => Instruction::OUTR((t, r0).into(), (t, r1).into()),
+            [O, I, [t, _, _], r, i0, i1, i2, i3, i4] => Instruction::OUTI((t, r).into(), [i0, i1, i2, i3, i4, ZERO, ZERO, ZERO, ZERO].into()),
 
-
-            // [_, _, _, _, _, _, _, _, _] => Instruction::
             _ => panic!("illegal instruction (interrupts not implemented yet)"),
         }
     }
@@ -156,7 +265,7 @@ impl Cpu {
         // I KNOW BUT IN THIS ONE CASE IT IS OKAY
         use Instruction::*;
 
-        // FIXME: Some of these require doing stuff
+        // FIXME: Some of these require doing stuff :(
         match machine_op {
             LHT(register) => self.lht(register),
             HLT => self.hlt(),
@@ -198,6 +307,7 @@ impl Cpu {
             PUSHIMWORD(imm) => self.push_im_word(imm),
             PUSHIMTRYTE(imm) => self.push_im_tryte(imm),
             PUSHMEM(r0, r1, r2, imm) => self.push_mem(r0, r1, r2, imm),
+            POP(dest) => self.pop(dest),
             CMP(r0, r1) => self.cmp(r0, r1),
             SPT(r) => self.spt(r),
             SST(r) => self.sst(r),
@@ -241,7 +351,6 @@ impl Cpu {
             BPPI(imm) => self.bpp_i(imm),
             BPPM(r0, r1, r2, imm) => self.bpp_m(r0, r1, r2, imm),
             INR(dest, loc) => self.in_r(dest, loc),
-            INI(dest, loc) => self.in_i(dest, loc),
             OUTR(dest, loc) => self.out_r(dest, loc),
             OUTI(dest, loc) => self.out_i(dest, loc),
         }

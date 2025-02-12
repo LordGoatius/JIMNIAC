@@ -531,6 +531,19 @@ impl jt1701 for Cpu {
         }
     }
 
+    fn pop(&mut self, dest: Register) {
+        match dest.size {
+            WordOrTryte::Word => {
+                let val = self.stack.get_word(self.register_file.get_word(SP_WORD));
+                self.register_file.set_value(dest, val);
+            }, 
+            WordOrTryte::Tryte => {
+                let val = *self.stack.get(self.register_file.get_word(SP_WORD));
+                self.register_file.set_value_either(dest, Right(val));
+            }
+        }
+    }
+
     //== Branch ==//
     /// Compare 2 registers
     fn cmp(&mut self, r0: Register, r1: Register) {
@@ -1225,15 +1238,11 @@ impl jt1701 for Cpu {
         todo!()
     }
 
-    fn in_i(&mut self, dest: Register, loc: Word) {
-        todo!()
-    }
-
     fn out_r(&mut self, dest: Register, loc: Register) {
         todo!()
     }
 
-    fn out_i(&mut self, dest: Register, loc: Word) {
+    fn out_i(&mut self, dest: Register, val: Word) {
         todo!()
     }
 }
