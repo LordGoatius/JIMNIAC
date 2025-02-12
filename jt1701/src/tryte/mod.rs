@@ -29,7 +29,12 @@ impl Tryte {
 
 impl GetStatus for Tryte {
     fn get_sign(&self) -> Trit {
-        todo!()
+        for i in (0..self.len()).rev() {
+            if self[i] != Trit::Zero {
+                return self[i];
+            }
+        }
+        Trit::Zero
     }
 
     fn get_parity(&self) -> Trit {

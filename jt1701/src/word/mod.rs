@@ -44,7 +44,12 @@ impl Word {
 
 impl GetStatus for Word {
     fn get_sign(&self) -> Trit {
-        todo!()
+        for i in (0..self.len()).rev() {
+            if self[i] != Trit::Zero {
+                return self[i];
+            }
+        }
+        Trit::Zero
     }
 
     fn get_parity(&self) -> Trit {
@@ -89,6 +94,12 @@ impl From<Word> for [Tryte; 3] {
 impl From<Word> for [[Trit; 3]; 9] {
     fn from(value: Word) -> Self {
         unsafe { std::mem::transmute::<Word, [[Trit; 3]; 9]>(value) }
+    }
+}
+
+impl From<[[Trit; 3]; 9]> for  Word {
+    fn from(value: [[Trit; 3]; 9]) -> Self {
+        unsafe { std::mem::transmute(value) }
     }
 }
 

@@ -13,114 +13,13 @@ use itertools::{
 };
 
 use super::errors::CpuError;
-
-pub trait BimapEitherOps {
-    fn bimap_add(self, rhs: Self) -> Either<WordAddResult, TryteAddResult>;
-    fn bimap_add_tryte(self, rhs: Tryte) -> Either<WordAddResult, TryteAddResult>;
-    fn bimap_sub(self, rhs: Self) -> Either<WordAddResult, TryteAddResult>;
-    fn bimap_mul(self, rhs: Self) -> Either<Word, Tryte>;
-    fn bimap_div(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError>;
-    fn bimap_mod(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError>;
-    fn bimap_and(self, rhs: Self) -> Either<Word, Tryte>;
-    fn bimap_or(self, rhs: Self) -> Either<Word, Tryte>;
-}
-
-impl GetStatus for Either<Word, Tryte> {
-    fn get_sign(&self) -> Trit {
-        self.either(|x| x.get_sign(), |x| x.get_sign())
-    }
-
-    fn get_parity(&self) -> Trit {
-        self.either(|x| x.get_parity(), |x| x.get_parity())
-    }
-}
-
-pub struct EitherAddResult {
-    pub result: Either<Word, Tryte>,
-    pub carry: Trit
-}
-
-pub trait MapResult {
-    fn mapres(self) -> Either<Word, Tryte>;
-    fn bubbleres(self) -> EitherAddResult;
-}
-
-impl MapResult for Either<WordAddResult, TryteAddResult> {
-    fn mapres(self) -> Either<Word, Tryte> {
-        self.map_either(|r| r.result, |r| r.result)
-    }
-
-    fn bubbleres(self) -> EitherAddResult {
-        match self {
-            Left(res) => EitherAddResult { result: Left(res.result), carry: res.carry },
-            Right(res) => EitherAddResult { result: Right(res.result), carry: res.carry },
-        }
-    }
-}
-
-impl BimapEitherOps for Either<Word, Tryte> {
-    fn bimap_and(self, rhs: Self) -> Either<Word, Tryte> {
-        self.map_either(|r| r & rhs.unwrap_left(), |r| r & rhs.unwrap_right())
-    }
-
-    fn bimap_or(self, rhs: Self) -> Either<Word, Tryte> {
-        self.map_either(|r| r | rhs.unwrap_left(), |r| r | rhs.unwrap_right())
-    }
-
-    fn bimap_add(self, rhs: Self) -> Either<WordAddResult, TryteAddResult> {
-        self.map_either(|r| r + rhs.unwrap_left(), |r| r + rhs.unwrap_right())
-    }
-
-    fn bimap_add_tryte(self, rhs: Tryte) -> Either<WordAddResult, TryteAddResult> {
-        self.map_either(|r| r + rhs, |r| r + rhs)
-    }
-
-    fn bimap_sub(self, rhs: Self) -> Either<WordAddResult, TryteAddResult> {
-        self.map_either(|r| r - rhs.unwrap_left(), |r| r - rhs.unwrap_right())
-    }
-
-    fn bimap_mul(self, rhs: Self) -> Either<Word, Tryte> {
-        self.map_either(|r| r * rhs.unwrap_left(), |r| r * rhs.unwrap_right())
-    }
-
-    fn bimap_div(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError> {
-        let temp = self.map_either(|r| (r / rhs.unwrap_left()), |r| (r / rhs.unwrap_right()));
-
-        match temp {
-            Left(val) => match val {
-                Ok(word) => Ok(Left(word)),
-                Err(err) => Err(err),
-            },
-            Right(val) => match val {
-                Ok(tryte) => Ok(Right(tryte)),
-                Err(err) => Err(err),
-            },
-        }
-    }
-
-    fn bimap_mod(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError> {
-        let temp = self.map_either(|r| (r % rhs.unwrap_left()), |r| (r % rhs.unwrap_right()));
-
-        match temp {
-            Left(val) => match val {
-                Ok(word) => Ok(Left(word)),
-                Err(err) => Err(err),
-            },
-            Right(val) => match val {
-                Ok(tryte) => Ok(Right(tryte)),
-                Err(err) => Err(err),
-            },
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum WordOrTryte {
     Word,
     Tryte,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RegisterNumber {
     RN13,
     RN12,
@@ -179,18 +78,18 @@ pub const SP_TRYTE: Register = Register {
     size: WordOrTryte::Tryte,
 };
 
-impl Register {
+impl From<(Trit, [Trit; 3])> for Register {
     /// size:
     ///     NOne => Tryte
     ///     Zero => Word
-    pub(super) fn to_register(size: Trit, operands: [Trit; 3]) -> Register {
-        let size = match size {
+    fn from(value: (Trit, [Trit; 3])) -> Self {
+            let size = match value.0 {
             Trit::NOne => WordOrTryte::Tryte,
             Trit::Zero => WordOrTryte::Word,
             _ => panic!(),
         };
 
-        let num = match operands {
+        let num = match value.1 {
             [Trit::NOne, Trit::NOne, Trit::NOne] => RegisterNumber::RN13,
             [Trit::NOne, Trit::NOne, Trit::Zero] => RegisterNumber::RN12,
             [Trit::NOne, Trit::NOne, Trit::POne] => RegisterNumber::RN11,
@@ -335,6 +234,10 @@ impl IndexMut<RegisterNumber> for RegisterFile {
 
 impl RegisterFile {
     pub(crate) fn set_value(&mut self, reg: Register, val: Word) {
+        if reg.num == RegisterNumber::R0 {
+            return;
+        }
+
         match reg.size {
             WordOrTryte::Word => {
                 self[reg.num] = val;
@@ -346,6 +249,10 @@ impl RegisterFile {
     }
 
     pub(crate) fn set_value_either(&mut self, reg: Register, val: Either<Word, Tryte>) {
+        if reg.num == RegisterNumber::R0 {
+            return;
+        }
+        
         match reg.size {
             WordOrTryte::Word => match val {
                 Left(word) => {
@@ -367,6 +274,12 @@ impl RegisterFile {
     }
 
     pub(crate) fn get_value(&self, reg: Register) -> Either<Word, Tryte> {
+        if reg.num == RegisterNumber::R0 {
+            return match reg.size {
+                WordOrTryte::Word => Left(Word::default()),
+                WordOrTryte::Tryte => Right(Tryte::default()),
+            };
+        }
         match reg.size {
             WordOrTryte::Word => Left(self[reg.num]),
             WordOrTryte::Tryte => Right(<Word as Into<[Tryte; 3]>>::into(self[reg.num])[0]),
@@ -387,6 +300,114 @@ impl RegisterFile {
         }
     }
 }
+
+pub trait BimapEitherOps {
+    fn bimap_add(self, rhs: Self) -> Either<WordAddResult, TryteAddResult>;
+    fn bimap_add_tryte(self, rhs: Tryte) -> Either<WordAddResult, TryteAddResult>;
+    fn bimap_sub(self, rhs: Self) -> Either<WordAddResult, TryteAddResult>;
+    fn bimap_mul(self, rhs: Self) -> Either<Word, Tryte>;
+    fn bimap_div(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError>;
+    fn bimap_mod(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError>;
+    fn bimap_and(self, rhs: Self) -> Either<Word, Tryte>;
+    fn bimap_or(self, rhs: Self) -> Either<Word, Tryte>;
+    fn as_word(self) -> Word;
+}
+
+impl GetStatus for Either<Word, Tryte> {
+    fn get_sign(&self) -> Trit {
+        self.either(|x| x.get_sign(), |x| x.get_sign())
+    }
+
+    fn get_parity(&self) -> Trit {
+        self.either(|x| x.get_parity(), |x| x.get_parity())
+    }
+}
+
+pub struct EitherAddResult {
+    pub result: Either<Word, Tryte>,
+    pub carry: Trit
+}
+
+pub trait MapResult {
+    fn mapres(self) -> Either<Word, Tryte>;
+    fn bubbleres(self) -> EitherAddResult;
+}
+
+impl MapResult for Either<WordAddResult, TryteAddResult> {
+    fn mapres(self) -> Either<Word, Tryte> {
+        self.map_either(|r| r.result, |r| r.result)
+    }
+
+    fn bubbleres(self) -> EitherAddResult {
+        match self {
+            Left(res) => EitherAddResult { result: Left(res.result), carry: res.carry },
+            Right(res) => EitherAddResult { result: Right(res.result), carry: res.carry },
+        }
+    }
+}
+
+impl BimapEitherOps for Either<Word, Tryte> {
+    fn as_word(self) -> Word {
+        match self {
+            Left(word) => word,
+            Right(tryte) => tryte.into()
+        }
+    }
+    fn bimap_and(self, rhs: Self) -> Either<Word, Tryte> {
+        self.map_either(|r| r & rhs.unwrap_left(), |r| r & rhs.unwrap_right())
+    }
+
+    fn bimap_or(self, rhs: Self) -> Either<Word, Tryte> {
+        self.map_either(|r| r | rhs.unwrap_left(), |r| r | rhs.unwrap_right())
+    }
+
+    fn bimap_add(self, rhs: Self) -> Either<WordAddResult, TryteAddResult> {
+        self.map_either(|r| r + rhs.unwrap_left(), |r| r + rhs.unwrap_right())
+    }
+
+    fn bimap_add_tryte(self, rhs: Tryte) -> Either<WordAddResult, TryteAddResult> {
+        self.map_either(|r| r + rhs, |r| r + rhs)
+    }
+
+    fn bimap_sub(self, rhs: Self) -> Either<WordAddResult, TryteAddResult> {
+        self.map_either(|r| r - rhs.unwrap_left(), |r| r - rhs.unwrap_right())
+    }
+
+    fn bimap_mul(self, rhs: Self) -> Either<Word, Tryte> {
+        self.map_either(|r| r * rhs.unwrap_left(), |r| r * rhs.unwrap_right())
+    }
+
+    fn bimap_div(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError> {
+        let temp = self.map_either(|r| (r / rhs.unwrap_left()), |r| (r / rhs.unwrap_right()));
+
+        match temp {
+            Left(val) => match val {
+                Ok(word) => Ok(Left(word)),
+                Err(err) => Err(err),
+            },
+            Right(val) => match val {
+                Ok(tryte) => Ok(Right(tryte)),
+                Err(err) => Err(err),
+            },
+        }
+    }
+
+    fn bimap_mod(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError> {
+        let temp = self.map_either(|r| (r % rhs.unwrap_left()), |r| (r % rhs.unwrap_right()));
+
+        match temp {
+            Left(val) => match val {
+                Ok(word) => Ok(Left(word)),
+                Err(err) => Err(err),
+            },
+            Right(val) => match val {
+                Ok(tryte) => Ok(Right(tryte)),
+                Err(err) => Err(err),
+            },
+        }
+    }
+}
+
 
 #[cfg(test)]
 pub mod test {
