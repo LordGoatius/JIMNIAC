@@ -1,7 +1,8 @@
-[package]
-name = "ternary_machine"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+resolver = "3"
+members = [
+    "jt1701", 
+]
 
-[dependencies]
-itertools = "0.13.0"
+[workspace.dependencies]
+itertools = "^0.14.0"

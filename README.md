@@ -1,4 +1,5 @@
 # Overview
+<<<<<<< HEAD
 In this project I made a Harvard architecture virtual machine which operated on balanced ternary machine code.
 
 `git checkout v2` to checkout my progress on my much more advanced von Neumann architecture machine.
@@ -46,3 +47,10 @@ label2:
 ```
 
 There is no halt instruction, so just infinite loop instead. Turing failed to consider this in the halting problem I think.
+=======
+
+This repository contains all of my work on my von Neumann architecture ternary virtual machine.
+
+A guide for the machine code/assmebly is not provided yet. It's slightly too big to be included in a README file.
+It will be provided once the assembler is done.
+>>>>>>> v2
