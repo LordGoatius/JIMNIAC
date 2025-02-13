@@ -13,7 +13,7 @@ use itertools::{
 };
 
 use super::errors::CpuError;
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WordOrTryte {
     Word,
     Tryte,
@@ -54,7 +54,7 @@ pub enum RegisterNumber {
     BP, // => R13
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Register {
     pub(crate) num: RegisterNumber,
     pub(crate) size: WordOrTryte,

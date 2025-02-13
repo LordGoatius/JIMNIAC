@@ -1,6 +1,7 @@
 use super::registers::Register;
 use super::Cpu;
 use crate::cpu::jt1701isa::{jt1701, Instruction};
+use crate::cpu::registers::SP_WORD;
 use crate::septivigntimal::*;
 use crate::tryte::Tryte;
 use crate::{word::Word, Trit};
@@ -8,10 +9,13 @@ use crate::{word::Word, Trit};
 impl Cpu {
     // (fetch/execute)
     fn fexecute(&mut self) {
+        let mut i = 0;
         'main: loop {
             use Instruction::*;
             let instruction = self.stack.get_word(self.program_counter);
             let instr = instruction.into();
+            println!("{i}");
+            println!("{instr:?}");
             match instr {
                 LHT(register) => {
                     self.lht(register);
@@ -300,20 +304,20 @@ impl Cpu {
                     self.inc_pc();
                 }
             }
+            i += 1;
         }
     }
 }
 
 #[cfg(test)]
 pub mod test {
-    use crate::{cpu::{consts::*, jt1701isa::{self, jt1701, Instruction}, Cpu}, septivigntimal::*, trits::Trit, tryte::Tryte, word::{consts::THREE_WORD, Word}};
+    use crate::{cpu::{consts::*, jt1701isa::{self, jt1701, Instruction}, registers::SP_WORD, Cpu}, septivigntimal::*, trits::Trit, tryte::Tryte, word::{consts::THREE_WORD, Word}};
 
     #[test]
     fn fedeex() {
         use super::Instruction::*;
         let mut cpu = Cpu::default();
         cpu.program_counter = Word::default();
-
         // 0  mov %RN11, 1
         // 3  mov %RN13, n
         // 6  mov %RN12, 1
@@ -348,5 +352,47 @@ pub mod test {
         cpu.fexecute();
         let val: isize = cpu.register_file.get_word(RN12_WORD).into();
         println!("{val:?}");
+    }
+
+    #[test]
+    fn stack_test() {
+        use super::Instruction::*;
+        let mut cpu = Cpu::default();
+        cpu.program_counter = Word::default();
+        // (8 + 9) * 5 => 8 9 + 5 * = 85
+        // 0  pushim 8
+        // 3  pushim 9
+        // 6  pushim 5
+        // 9  pop %RN13
+        // 12 pop %RN12
+        // 15 add %RN11, %RN13, %RN12, 0
+        // 18 pop %RN10
+        // 21 mul %RN9, %RN11, %RN10
+        // 24 hlt
+        let instrs = vec![
+            PUSHIMWORD([[Trit::NOne, Trit::Zero, Trit::POne], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            PUSHIMWORD([[Trit::Zero, Trit::Zero, Trit::POne], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            POP(RN13_WORD),
+            POP(RN12_WORD),
+            ADD(RN11_WORD, Tryte::default(), RN12_WORD, RN13_WORD),
+            PUSHIMWORD([[Trit::NOne, Trit::NOne, Trit::POne], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            POP(RN10_WORD),
+            MUL(RN9_WORD, Tryte::default(), RN10_WORD, RN11_WORD),
+            HLT
+        ];
+
+        cpu.register_file.set_value(SP_WORD, [Trit::NOne; 27].into());
+
+        let mut loc = cpu.program_counter;
+        for i in &instrs {
+            cpu.stack.insert_word(loc, (*i).into());
+            loc = (loc + THREE_WORD).result;
+        }
+
+        cpu.fexecute();
+        for (i, reg) in [RN13_WORD, RN12_WORD, RN11_WORD, RN10_WORD, RN9_WORD].into_iter().enumerate() {
+            let val: isize = cpu.register_file.get_word(reg).into();
+            println!("result: {val:?}");
+        }
     }
 }

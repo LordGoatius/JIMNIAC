@@ -539,11 +539,17 @@ impl jt1701 for Cpu {
     fn pop(&mut self, dest: Register) {
         match dest.size {
             WordOrTryte::Word => {
-                let val = self.stack.get_word(self.register_file.get_word(SP_WORD));
+                let mut curr = self.register_file.get_word(SP_WORD);
+                self.register_file.set_value(SP_WORD, (curr - THREE_WORD).result);
+                curr = self.register_file.get_word(SP_WORD);
+                let val = self.stack.get_word(curr);
                 self.register_file.set_value(dest, val);
             }
             WordOrTryte::Tryte => {
-                let val = *self.stack.get(self.register_file.get_word(SP_WORD));
+                let mut curr = self.register_file.get_word(SP_WORD);
+                self.register_file.set_value(SP_WORD, (curr - ONE_WORD).result);
+                curr = self.register_file.get_word(SP_WORD);
+                let val = *self.stack.get(curr);
                 self.register_file.set_value_either(dest, Right(val));
             }
         }

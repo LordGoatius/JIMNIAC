@@ -199,7 +199,7 @@ pub trait jt1701 {
     fn out_i(&mut self, dest: Register, val: Word);
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Instruction {
     LHT(Register),
     HLT,
@@ -375,6 +375,14 @@ impl From<Word> for Instruction {
                 (t, r0).into(),
                 (t, r1).into(),
             ),
+
+            [O, W, [t, ZT, ZT], i0, i1, i2, d, r, ZERO] => {
+                Instruction::OWO([i0, i1, i2].into(), (t, d).into(), (t, r).into())
+            }
+            [U, W, [t, ZT, ZT], i0, i1, i2, d, r, ZERO] => {
+                Instruction::UWU([i0, i1, i2].into(), (t, d).into(), (t, r).into())
+            }
+
             // BIT
             [N, O, [t, ZT, ZT], ZERO, ZERO, ZERO, d, r, ZERO] => {
                 Instruction::NOT((t, d).into(), (t, r).into())
@@ -600,9 +608,7 @@ impl From<Word> for Instruction {
             ),
 
             x => {
-                let instr: Word = x.into();
-                let instruction: Instruction = instr.into();
-                println!("{instruction:?}");
+                println!("{x:?}");
                 panic!("illegal instruction (interrupts not implemented yet)");
             },
         }
@@ -625,8 +631,8 @@ impl From<Instruction> for Word {
                 },
                 NOP => [N, O, P, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into(),
                 WFI => [W, F, I, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into(),
-                STI => [S, F, I, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into(),
-                BTI => [B, F, I, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into(),
+                STI => [S, T, I, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into(),
+                BTI => [B, T, I, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into(),
                 RTI => [R, T, I, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into(),
                 // [L, R, [t, _, _], d, r, _, i0, i1, i2] => {
                 LDRI(dest, src, imm) => {
@@ -697,10 +703,21 @@ impl From<Instruction> for Word {
                     [M, I, [t, Trit::Zero, Trit::Zero], r, parts[0], parts[1], parts[2], parts[3], parts[4]].into()
                 },
 
-                // [O, W, O, i0, i1, i2, d, r, ZERO] => Instruction::OWO(todo!(), todo!(), todo!(), todo!()),
-                // [U, W, U, i0, i1, i2, d, r, ZERO] => Instruction::UWU(todo!(), todo!(), todo!(), todo!()),
-                OWO(imm, dest, src) => todo!(),
-                UWU(imm, dest, src) => todo!(),
+                // [O, W, [t, _, _], i0, i1, i2, d, r, ZERO] => Instruction::OWO(todo!(), todo!(), todo!(), todo!()),
+                // [U, W, [t, _, _], i0, i1, i2, d, r, ZERO] => Instruction::UWU(todo!(), todo!(), todo!(), todo!()),
+                OWO(imm, dest, src) => {
+                    let (t, d) = dest.into();
+                    let (t, r) = src.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [O, W, [t, Trit::Zero, Trit::Zero], parts[0], parts[1], parts[2], d, r, ZERO].into()
+                },
+
+                UWU(imm, dest, src) => {
+                    let (t, d) = dest.into();
+                    let (t, r) = src.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [U, W, [t, Trit::Zero, Trit::Zero], parts[0], parts[1], parts[2], d, r, ZERO].into()
+                },
 
                 // [A, D, [t, _, _], i0, i1, i2, d, r0, r1] => Instruction::ADD(
                 ADD(dest, imm, src0, src1) => {
@@ -806,15 +823,15 @@ impl From<Instruction> for Word {
                 // [P, T, [t, _, _], i0, i1, i2, ZERO, ZERO, ZERO] => {
                 PUSHIMTRYTE(imm) => {
                     let parts: [[Trit; 3]; 3] = imm.into();
-                    [P, I, ZERO, parts[0], parts[1], parts[2], ZERO, ZERO, ZERO].into()
+                    [P, T, ZERO, parts[0], parts[1], parts[2], ZERO, ZERO, ZERO].into()
                 },
                 // [P, M, [t, _, _], d, r0, r1, i0, i1, i2] => Instruction::PUSHMEM(
                 PUSHMEM(r0, r1, r2, imm) => {
-                    let (t, r0) = r0.into();
-                    let (_, r1) = r1.into();
-                    let (_, r2) = r2.into();
+                    let (t, d) = r0.into();
+                    let (_, r0) = r1.into();
+                    let (_, r1) = r2.into();
                     let parts: [[Trit; 3]; 3] = imm.into();
-                    [P, R, [t, Trit::Zero, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                    [P, M, [t, Trit::Zero, Trit::Zero], d, r0, r1, parts[0], parts[1], parts[2]].into()
                 },
 
                 // [P, P, [t, _, _], d, _, _, _, _, _] => Instruction::POP((t, d).intotodo!()),
@@ -1084,7 +1101,7 @@ impl From<Instruction> for Word {
                 OUTR(dest, loc) => {
                     let (t, r0) = dest.into();
                     let (_, r1) = loc.into();
-                    [I, R, [t, Trit::Zero, Trit::Zero], r0, r1, ZERO, ZERO, ZERO, ZERO].into()
+                    [O, R, [t, Trit::Zero, Trit::Zero], r0, r1, ZERO, ZERO, ZERO, ZERO].into()
                 },
                 // [O, I, [t, _, _], r, i0, i1, i2, i3, i4] => Instruction::OUTI(
                 //     (t, r).into(),
@@ -1092,9 +1109,113 @@ impl From<Instruction> for Word {
                 OUTI(dest, imm) => {
                     let (t, r0) = dest.into();
                     let parts: [[Trit; 3]; 9] = imm.into();
-                    [I, R, [t, Trit::Zero, Trit::Zero], r0, parts[0], parts[1], parts[2], parts[3], parts[4]].into()
+                    [O, I, [t, Trit::Zero, Trit::Zero], r0, parts[0], parts[1], parts[2], parts[3], parts[4]].into()
                 },
             }
     }
 }
 
+#[cfg(test)]
+pub mod test {
+    use crate::cpu::jt1701isa::Instruction;
+    use crate::cpu::{consts::*, Cpu};
+    use crate::septivigntimal::ZERO;
+    use crate::trits::Trit;
+    use crate::word::Word;
+
+    #[test]
+    fn test_enc_dec() {
+        use super::Instruction::*;
+        let vals = vec![
+            LHT(RN11_WORD),
+            HLT,
+            INT([[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            NOP,
+            WFI,
+            STI,
+            BTI,
+            RTI,
+            LDRI(R12_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            LDRR(R12_WORD, RN11_WORD, RN11_WORD),
+            LDRRI(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            LDRPCI(R12_WORD, [[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            STRI(R12_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            STRR(R12_WORD, RN11_WORD, RN11_WORD),
+            STRRI(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            STRPCI(R12_WORD, [[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            MOVRR(R12_WORD, RN11_WORD),
+            MOVRI(R12_WORD, [[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            OWO([[Trit::Zero, Trit::POne, Trit::NOne]; 3].into(), R12_WORD, RN11_WORD),
+            UWU([[Trit::Zero, Trit::POne, Trit::NOne]; 3].into(), R12_WORD, RN11_WORD),
+            ADD(R12_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into(), RN11_WORD, RN11_WORD),
+            MUL(R12_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into(), RN11_WORD, RN11_WORD),
+            SUB(R12_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into(), RN11_WORD, RN11_WORD),
+            EQOT(R12_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into(), RN11_WORD, RN11_WORD),
+            EREM(R12_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into(), RN11_WORD, RN11_WORD),
+            NOT(R12_WORD, RN11_WORD),
+            LSH(R12_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            RSH(R12_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            ANDR(R12_WORD, RN11_WORD, RN11_WORD),
+            ORR(R12_WORD, RN11_WORD, RN11_WORD),
+            ROTR(R12_WORD, RN11_WORD, RN11_WORD),
+            ROTI(R12_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            PUSHR3(R12_WORD, RN11_WORD, RN11_WORD),
+            PUSHIMWORD([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            PUSHIMTRYTE([[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            PUSHMEM(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            POP(R12_WORD),
+            CMP(R12_WORD, RN11_WORD),
+            SPT(R12_WORD),
+            SST(R12_WORD),
+            BRR(R12_WORD, RN11_WORD, RN11_WORD),
+            BRI([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            BRM(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            BNER(R12_WORD, RN11_WORD, RN11_WORD),
+            BNEI([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            BNEM(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            BGTR(R12_WORD, RN11_WORD, RN11_WORD),
+            BGTI([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            BGTM(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            BLTR(R12_WORD, RN11_WORD, RN11_WORD),
+            BLTI([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            BLTM(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            BEQR(R12_WORD, RN11_WORD, RN11_WORD),
+            BEQI([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            BEQM(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            BGEQR(R12_WORD, RN11_WORD, RN11_WORD),
+            BGEQI([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            BGEQM(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            BLEQR(R12_WORD, RN11_WORD, RN11_WORD),
+            BLEQI([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            BLEQM(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            BOFNR(R12_WORD, RN11_WORD, RN11_WORD),
+            BOFNI([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            BOFNM(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            BOFZR(R12_WORD, RN11_WORD, RN11_WORD),
+            BOFZI([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            BOFZM(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            BOFPR(R12_WORD, RN11_WORD, RN11_WORD),
+            BOFPI([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            BOFPM(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            BPNR(R12_WORD, RN11_WORD, RN11_WORD),
+            BPNI([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            BPNM(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            BPZR(R12_WORD, RN11_WORD, RN11_WORD),
+            BPZI([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            BPZM(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            BPPR(R12_WORD, RN11_WORD, RN11_WORD),
+            BPPI([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            BPPM(R12_WORD, RN11_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            INR(R12_WORD, RN11_WORD),
+            OUTR(R12_WORD, RN11_WORD),
+            OUTI(R12_WORD, [[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into())];
+
+        for (i, enc) in vals.into_iter().enumerate() {
+            println!("{enc:?}");
+            let encode: Word = enc.into();
+            let instr: Instruction = encode.into();
+            println!("{i}");
+            assert_eq!(enc, instr);
+        }
+    }
+}
