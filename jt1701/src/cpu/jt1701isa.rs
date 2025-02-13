@@ -1,4 +1,4 @@
-use crate::{tryte::Tryte, word::Word};
+use crate::{cpu::registers, septivigntimal::*, trits::Trit, tryte::Tryte, word::Word};
 
 use super::{errors::CpuError, registers::Register};
 
@@ -199,6 +199,7 @@ pub trait jt1701 {
     fn out_i(&mut self, dest: Register, val: Word);
 }
 
+#[derive(Clone, Copy, Debug)]
 pub enum Instruction {
     LHT(Register),
     HLT,
@@ -282,5 +283,818 @@ pub enum Instruction {
     INR(Register, Register),
     OUTR(Register, Register),
     OUTI(Register, Word),
+}
+
+impl From<Word> for Instruction {
+    fn from(value: Word) -> Instruction {
+        let value: [[Trit; 3]; 9] = value.into();
+        match value {
+            // [_, _, _, _, _, _, _, _, _] => Instruction::
+            // CPU
+            [L, I, T, reg, [t, _, _], _, _, _, _] => Instruction::LHT((t, reg).into()),
+            [H, L, T, ..] => Instruction::HLT,
+            [N, O, P, ..] => Instruction::NOP,
+            [I, N, T, t0, t1, t2, ..] => Instruction::INT([t0, t1, t2].into()),
+            [W, F, I, _, _, _, _, _, _] => Instruction::WFI,
+            [S, T, I, _, _, _, _, _, _] => Instruction::STI,
+            [B, T, I, _, _, _, _, _, _] => Instruction::BTI,
+            [R, T, I, ..] => Instruction::RTI,
+            // LOAD
+            [L, R, [t, _, _], d, r, _, i0, i1, i2] => {
+                Instruction::LDRI((t, d).into(), (t, r).into(), [i0, i1, i2].into())
+            }
+            [L, I, [t, _, _], d, r0, r1, ZERO, ZERO, ZERO] => {
+                Instruction::LDRR((t, d).into(), (t, r0).into(), (t, r1).into())
+            }
+            [L, B, [t, _, _], d, r0, r1, i0, i1, i2] => Instruction::LDRRI(
+                (t, d).into(),
+                (t, r0).into(),
+                (t, r1).into(),
+                [i0, i1, i2].into(),
+            ),
+            [L, P, [t, _, _], r, i0, i1, i2, i3, i4] => Instruction::LDRPCI(
+                (t, r).into(),
+                [i0, i1, i2, i3, i4, ZERO, ZERO, ZERO, ZERO].into(),
+            ),
+            // STORE
+            [S, R, [t, _, _], d, r, _, i0, i1, i2] => {
+                Instruction::STRI((t, d).into(), (t, r).into(), [i0, i1, i2].into())
+            }
+            [S, I, [t, _, _], d, r0, r1, ZERO, ZERO, ZERO] => {
+                Instruction::STRR((t, d).into(), (t, r0).into(), (t, r1).into())
+            }
+            [S, B, [t, _, _], d, r0, r1, i0, i1, i2] => Instruction::STRRI(
+                (t, d).into(),
+                (t, r0).into(),
+                (t, r1).into(),
+                [i0, i1, i2].into(),
+            ),
+            [S, P, [t, _, _], r, i0, i1, i2, i3, i4] => Instruction::STRPCI(
+                (t, r).into(),
+                [i0, i1, i2, i3, i4, ZERO, ZERO, ZERO, ZERO].into(),
+            ),
+            // MOV
+            [M, I, [t, _, _], r, i0, i1, i2, i3, i4] => Instruction::MOVRI(
+                (t, r).into(),
+                [i0, i1, i2, i3, i4, ZERO, ZERO, ZERO, ZERO].into(),
+            ),
+            [M, R, [t, _, _], r0, r1, _, _, _, _] => {
+                Instruction::MOVRR((t, r0).into(), (t, r1).into())
+            }
+            // BIT
+            [O, W, O, i0, i1, i2, d, r, ZERO] => Instruction::OWO(todo!(), todo!(), todo!()),
+            [U, W, U, i0, i1, i2, d, r, ZERO] => Instruction::UWU(todo!(), todo!(), todo!()),
+            // ALU
+            [A, D, [t, _, _], i0, i1, i2, d, r0, r1] => Instruction::ADD(
+                (t, d).into(),
+                [i0, i1, i2].into(),
+                (t, r0).into(),
+                (t, r1).into(),
+            ),
+            [M, U, [t, _, _], i0, i1, i2, d, r0, r1] => Instruction::MUL(
+                (t, d).into(),
+                [i0, i1, i2].into(),
+                (t, r0).into(),
+                (t, r1).into(),
+            ),
+            [S, U, [t, _, _], i0, i1, i2, d, r0, r1] => Instruction::SUB(
+                (t, d).into(),
+                [i0, i1, i2].into(),
+                (t, r0).into(),
+                (t, r1).into(),
+            ),
+            [E, Q, [t, _, _], i0, i1, i2, d, r0, r1] => Instruction::EQOT(
+                (t, d).into(),
+                [i0, i1, i2].into(),
+                (t, r0).into(),
+                (t, r1).into(),
+            ),
+            [E, R, [t, _, _], i0, i1, i2, d, r0, r1] => Instruction::EREM(
+                (t, d).into(),
+                [i0, i1, i2].into(),
+                (t, r0).into(),
+                (t, r1).into(),
+            ),
+            // BIT
+            [N, O, [t, _, _], _, _, _, d, r, _] => {
+                Instruction::NOT((t, d).into(), (t, r).into())
+            }
+            [L, S, [t, _, _], i0, i1, i2, d, r, _] => {
+                Instruction::LSH((t, d).into(), (t, r).into(), [i0, i1, i2].into())
+            }
+            [R, S, [t, _, _], i0, i1, i2, d, r0, r1] => {
+                Instruction::RSH((t, d).into(), (t, r0).into(), [i0, i1, i2].into())
+            }
+            [A, N, [t, _, _], _, _, _, d, r0, r1] => {
+                Instruction::ANDR((t, d).into(), (t, r0).into(), (t, r1).into())
+            }
+            [O, R, [t, _, _], _, _, _, d, r0, r1] => {
+                Instruction::ORR((t, d).into(), (t, r0).into(), (t, r1).into())
+            }
+            [R, O, [t, Trit::POne, _], _, _, _, d, r0, r1] => {
+                Instruction::ROTR((t, d).into(), (t, r0).into(), (t, r1).into())
+            }
+            [R, I, [t, Trit::NOne, _], i0, i1, i2, d, r, _] => {
+                Instruction::ROTI((t, d).into(), (t, r).into(), [i0, i1, i2, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into())
+            }
+            // Stack
+            [P, R, [t, _, _], r0, r1, r2, _, _, _] => {
+                Instruction::PUSHR3((t, r0).into(), (t, r1).into(), (t, r2).into())
+            }
+            [P, I, _, i0, i1, i2, i3, i4, i5] => {
+                Instruction::PUSHIMWORD([i0, i1, i2, i3, i4, i5, ZERO, ZERO, ZERO].into())
+            }
+            [P, T, _, i0, i1, i2, ZERO, ZERO, ZERO] => {
+                Instruction::PUSHIMTRYTE([i0, i1, i2].into())
+            }
+            [P, M, [t, _, _], d, r0, r1, i0, i1, i2] => Instruction::PUSHMEM(
+                (t, d).into(),
+                (t, r0).into(),
+                (t, r1).into(),
+                [i0, i1, i2].into(),
+            ),
+            [P, P, [t, _, _], d, _, _, _, _, _] => Instruction::POP((t, d).into()),
+            [C, P, [t, _, _], r0, r1, _, _, _, _] => {
+                Instruction::CMP((t, r0).into(), (t, r1).into())
+            }
+            [C, M, [t, _, _], r, _, _, _, _, _] => Instruction::SPT((t, r).into()),
+            [C, S, [t, _, _], r, _, _, _, _, _] => Instruction::SST((t, r).into()),
+            [B, ZERO, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BRR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm
+                Trit::Zero => Instruction::BRI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BRM(
+                    (t, a).into(),
+                    (t, b).into(),
+                    (t, c).into(),
+                    [d, e, f].into(),
+                ),
+            },
+            [B, A, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BNER((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm
+                Trit::Zero => Instruction::BNEI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BNEM(
+                    (t, a).into(),
+                    (t, b).into(),
+                    (t, c).into(),
+                    [d, e, f].into(),
+                ),
+            },
+            [B, B, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BGTR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm
+                Trit::Zero => Instruction::BGTI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BGTM(
+                    (t, a).into(),
+                    (t, b).into(),
+                    (t, c).into(),
+                    [d, e, f].into(),
+                ),
+            },
+            [B, C, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BLTR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm
+                Trit::Zero => Instruction::BLTI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BLTM(
+                    (t, a).into(),
+                    (t, b).into(),
+                    (t, c).into(),
+                    [d, e, f].into(),
+                ),
+            },
+            [B, D, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BEQR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm
+                Trit::Zero => Instruction::BEQI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BEQM(
+                    (t, a).into(),
+                    (t, b).into(),
+                    (t, c).into(),
+                    [d, e, f].into(),
+                ),
+            },
+            [B, E, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BGEQR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm
+                Trit::Zero => Instruction::BGEQI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BGEQM(
+                    (t, a).into(),
+                    (t, b).into(),
+                    (t, c).into(),
+                    [d, e, f].into(),
+                ),
+            },
+            [B, F, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BLEQR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm
+                Trit::Zero => Instruction::BLEQI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BLEQM(
+                    (t, a).into(),
+                    (t, b).into(),
+                    (t, c).into(),
+                    [d, e, f].into(),
+                ),
+            },
+            [B, G, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BOFNR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm
+                Trit::Zero => Instruction::BOFNI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BOFNM(
+                    (t, a).into(),
+                    (t, b).into(),
+                    (t, c).into(),
+                    [d, e, f].into(),
+                ),
+            },
+            [B, H, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BOFZR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm
+                Trit::Zero => Instruction::BOFZI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BOFZM(
+                    (t, a).into(),
+                    (t, b).into(),
+                    (t, c).into(),
+                    [d, e, f].into(),
+                ),
+            },
+            [B, I, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BOFPR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm
+                Trit::Zero => Instruction::BOFPI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BOFPM(
+                    (t, a).into(),
+                    (t, b).into(),
+                    (t, c).into(),
+                    [d, e, f].into(),
+                ),
+            },
+            [B, J, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BPNR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm
+                Trit::Zero => Instruction::BPNI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BPNM(
+                    (t, a).into(),
+                    (t, b).into(),
+                    (t, c).into(),
+                    [d, e, f].into(),
+                ),
+            },
+            [B, K, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BPZR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm
+                Trit::Zero => Instruction::BPZI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BPZM(
+                    (t, a).into(),
+                    (t, b).into(),
+                    (t, c).into(),
+                    [d, e, f].into(),
+                ),
+            },
+            [B, L, [t, h, _], a, b, c, d, e, f] => match h {
+                // Register
+                Trit::NOne => Instruction::BPPR((t, a).into(), (t, b).into(), (t, c).into()),
+                // Imm
+                Trit::Zero => Instruction::BPPI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
+                // Mem
+                Trit::POne => Instruction::BPPM(
+                    (t, a).into(),
+                    (t, b).into(),
+                    (t, c).into(),
+                    [d, e, f].into(),
+                ),
+            },
+            [I, R, [t, _, _], r0, r1, _, _, _, _] => {
+                Instruction::INR((t, r0).into(), (t, r1).into())
+            }
+            [O, R, [t, _, _], r0, r1, _, _, _, _] => {
+                Instruction::OUTR((t, r0).into(), (t, r1).into())
+            }
+            [O, I, [t, _, _], r, i0, i1, i2, i3, i4] => Instruction::OUTI(
+                (t, r).into(),
+                [i0, i1, i2, i3, i4, ZERO, ZERO, ZERO, ZERO].into(),
+            ),
+
+            x => {
+                let instr: Word = x.into();
+                let instruction: Instruction = instr.into();
+                println!("{instruction:?}");
+                panic!("illegal instruction (interrupts not implemented yet)");
+            },
+        }
+    }
+}
+
+impl From<Instruction> for Word {
+    fn from(value: Instruction) -> Self {
+        use self::Instruction::*;
+        use crate::trits::Trit;
+
+        match value {
+                // [L, I, T, reg, [t, _, _], _, _, _, _] => Instruction::LHT((t, reg).into()),
+                LHT(register) => [L, I, T, register.into(), [register.into(), Trit::Zero, Trit::Zero], ZERO, ZERO, ZERO, ZERO].into(),
+                HLT => [H, L, T, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into(),
+                // [I, N, T, t0, t1, t2, ..] => Instruction::INT([t0, t1, t2].intotodo!()),
+                INT(interrupt) => {
+                    let parts: [[Trit; 3]; 3] = interrupt.into();
+                    [I, N, T, parts[0], parts[1], parts[2], ZERO, ZERO, ZERO].into()
+                },
+                NOP => [N, O, P, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into(),
+                WFI => [W, F, I, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into(),
+                STI => [S, F, I, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into(),
+                BTI => [B, F, I, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into(),
+                RTI => [R, T, I, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into(),
+                // [L, R, [t, _, _], d, r, _, i0, i1, i2] => {
+                LDRI(dest, src, imm) => {
+                    let (t, d) = dest.into();
+                    let (_, r) = src.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [L, R, [t, Trit::Zero, Trit::Zero], d, r, ZERO, parts[0], parts[1], parts[2]].into()
+                },
+                STRI(dest, src, imm) => {
+                    let (t, d) = dest.into();
+                    let (_, r) = src.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [S, R, [t, Trit::Zero, Trit::Zero], d, r, ZERO, parts[0], parts[1], parts[2]].into()
+                },
+
+                // [L, I, [t, _, _], d, r0, r1, ZERO, ZERO, ZERO] => {
+                LDRR(dest, src0, src1) => {
+                    let (t, d) = dest.into();
+                    let (_, r0) = src0.into();
+                    let (_, r1) = src1.into();
+                    [L, I, [t, Trit::Zero, Trit::Zero], d, r0, r1, ZERO, ZERO, ZERO].into()
+                },
+                STRR(dest, src0, src1) => {
+                    let (t, d) = dest.into();
+                    let (_, r0) = src0.into();
+                    let (_, r1) = src1.into();
+                    [S, I, [t, Trit::Zero, Trit::Zero], d, r0, r1, ZERO, ZERO, ZERO].into()
+                },
+
+                // [L, B, [t, _, _], d, r0, r1, i0, i1, i2] => Instruction::LDRRI(
+                LDRRI(dest, src0, src1, imm) => {
+                    let (t, d) = dest.into();
+                    let (_, r0) = src0.into();
+                    let (_, r1) = src1.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [L, B, [t, Trit::Zero, Trit::Zero], d, r0, r1, parts[0], parts[1], parts[2]].into()
+                },
+                STRRI(dest, src0, src1, imm) => {
+                    let (t, d) = dest.into();
+                    let (_, r0) = src0.into();
+                    let (_, r1) = src1.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [S, B, [t, Trit::Zero, Trit::Zero], d, r0, r1, parts[0], parts[1], parts[2]].into()
+                },
+
+                // [L, P, [t, _, _], r, i0, i1, i2, i3, i4] => Instruction::LDRPCI(
+                LDRPCI(dest, imm) => {
+                    let (t, r) = dest.into();
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [L, P, [t, Trit::Zero, Trit::Zero], r, parts[0], parts[1], parts[2], parts[3], parts[4]].into()
+                },
+                STRPCI(dest, imm) => {
+                    let (t, r) = dest.into();
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [S, P, [t, Trit::Zero, Trit::Zero], r, parts[0], parts[1], parts[2], parts[3], parts[4]].into()
+                },
+
+                // [M, R, [t, _, _], r0, r1, _, _, _, _] => {
+                MOVRR(dest, src) => {
+                    let (t, r0) = dest.into();
+                    let (_, r1) = src.into();
+                    [M, R, [t, Trit::Zero, Trit::Zero], r0, r1, ZERO, ZERO, ZERO, ZERO].into()
+                },
+                // [M, I, [t, _, _], r, i0, i1, i2, i3, i4] => Instruction::MOVRI(
+                MOVRI(dest, imm) => {
+                    let (t, r) = dest.into();
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [M, I, [t, Trit::Zero, Trit::Zero], r, parts[0], parts[1], parts[2], parts[3], parts[4]].into()
+                },
+
+                // [O, W, O, i0, i1, i2, d, r, ZERO] => Instruction::OWO(todo!(), todo!(), todo!(), todo!()),
+                // [U, W, U, i0, i1, i2, d, r, ZERO] => Instruction::UWU(todo!(), todo!(), todo!(), todo!()),
+                OWO(imm, dest, src) => todo!(),
+                UWU(imm, dest, src) => todo!(),
+
+                // [A, D, [t, _, _], i0, i1, i2, d, r0, r1] => Instruction::ADD(
+                ADD(dest, imm, src0, src1) => {
+                    let (t, d) = dest.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    let (_, r0) = src0.into();
+                    let (_, r1) = src1.into();
+                    [A, D, [t, Trit::Zero, Trit::Zero], parts[0], parts[1], parts[2], d, r0, r1].into()
+                },
+                MUL(dest, imm, src0, src1) =>  {
+                    let (t, d) = dest.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    let (_, r0) = src0.into();
+                    let (_, r1) = src1.into();
+                    [M, U, [t, Trit::Zero, Trit::Zero], parts[0], parts[1], parts[2], d, r0, r1].into()
+                },
+                SUB(dest, imm, src0, src1) =>  {
+                    let (t, d) = dest.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    let (_, r0) = src0.into();
+                    let (_, r1) = src1.into();
+                    [S, U, [t, Trit::Zero, Trit::Zero], parts[0], parts[1], parts[2], d, r0, r1].into()
+                },
+                EQOT(dest, imm, src0, src1) => {
+                    let (t, d) = dest.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    let (_, r0) = src0.into();
+                    let (_, r1) = src1.into();
+                    [E, Q, [t, Trit::Zero, Trit::Zero], parts[0], parts[1], parts[2], d, r0, r1].into()
+                },
+                EREM(dest, imm, src0, src1) => {
+                    let (t, d) = dest.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    let (_, r0) = src0.into();
+                    let (_, r1) = src1.into();
+                    [E, R, [t, Trit::Zero, Trit::Zero], parts[0], parts[1], parts[2], d, r0, r1].into()
+                },
+
+                // [N, O, [t, _, _], i0, i1, i2, d, r, _] => {
+                NOT(dest, src) => {
+                    let (t, d) = dest.into();
+                    // let parts: [[Trit; 3]; 3] = imm.into();
+                    let (_, r) = src.into();
+                    [N, O, [t, Trit::Zero, Trit::Zero], ZERO, ZERO, ZERO, d, r, ZERO].into()
+                },
+
+                // [L, S, [t, _, _], i0, i1, i2, d, r0, r1] => {
+                LSH(dest, src, count) => {
+                    let (t, d) = dest.into();
+                    let parts: [[Trit; 3]; 3] = count.into();
+                    let (_, r) = src.into();
+                    [L, S, [t, Trit::Zero, Trit::Zero], parts[0], parts[1], parts[2], d, r, ZERO].into()
+                },
+                RSH(dest, src, count) => {
+                    let (t, d) = dest.into();
+                    let parts: [[Trit; 3]; 3] = count.into();
+                    let (_, r) = src.into();
+                    [R, S, [t, Trit::Zero, Trit::Zero], parts[0], parts[1], parts[2], d, r, ZERO].into()
+                },
+
+                // [A, N, [t, _, _], _, _, _, d, r0, r1] => {
+                ANDR(dest, src0, src1) => {
+                    let (t, d) = dest.into();
+                    let (_, r0) = src0.into();
+                    let (_, r1) = src1.into();
+                    [A, N, [t, Trit::Zero, Trit::Zero], ZERO, ZERO, ZERO, d, r0, r1].into()
+                },
+                ORR(dest, src0, src1) => {
+                    let (t, d) = dest.into();
+                    let (_, r0) = src0.into();
+                    let (_, r1) = src1.into();
+                    [O, R, [t, Trit::Zero, Trit::Zero], ZERO, ZERO, ZERO, d, r0, r1].into()
+                },
+                ROTR(dest, src0, src1) => {
+                    let (t, d) = dest.into();
+                    let (_, r0) = src0.into();
+                    let (_, r1) = src1.into();
+                    [R, O, [t, Trit::POne, Trit::Zero], ZERO, ZERO, ZERO, d, r0, r1].into()
+                },
+
+                // [R, I, [t, Trit::NOne, _], i0, i1, i2, d, r, _] => {
+                //     Instruction::ROTI((t, d).into(), (t, r).into(), [i0, i1, i2, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into())
+                ROTI(dest, src, num) => {
+                    let (t, d) = dest.into();
+                    let (_, r) = src.into();
+                    let parts: [[Trit; 3]; 9] = num.into();
+                    [R, I, [t, Trit::NOne, Trit::Zero], parts[0], parts[1], parts[2], d, r, ZERO].into()
+                },
+
+                // [P, R, [t, _, _], r0, r1, r2, _, _, _] => {
+                PUSHR3(r0, r1, r2) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    [P, R, [t, Trit::Zero, Trit::Zero], r0, r1, r2, ZERO, ZERO, ZERO].into()
+                },
+
+                // [P, I, [t, _, _], i0, i1, i2, i3, i4, i5] => {
+                PUSHIMWORD(imm) => {
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [P, I, ZERO, parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]].into()
+                },
+                // [P, T, [t, _, _], i0, i1, i2, ZERO, ZERO, ZERO] => {
+                PUSHIMTRYTE(imm) => {
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [P, I, ZERO, parts[0], parts[1], parts[2], ZERO, ZERO, ZERO].into()
+                },
+                // [P, M, [t, _, _], d, r0, r1, i0, i1, i2] => Instruction::PUSHMEM(
+                PUSHMEM(r0, r1, r2, imm) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [P, R, [t, Trit::Zero, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                },
+
+                // [P, P, [t, _, _], d, _, _, _, _, _] => Instruction::POP((t, d).intotodo!()),
+                POP(dest) => {
+                    let (t, d) = dest.into();
+                    [P, P, [t, Trit::Zero, Trit::Zero], d,  ZERO, ZERO, ZERO, ZERO, ZERO].into()
+                },
+                // [C, P, [t, _, _], r0, r1, _, _, _, _] => {
+                CMP(r0, r1) => {
+                    let (t, r0) = r0.into();
+                    let (t, r1) = r1.into();
+                    [C, P, [t, Trit::Zero, Trit::Zero], r0, r1, ZERO, ZERO, ZERO, ZERO].into()
+                },
+                // [C, M, [t, _, _], r, _, _, _, _, _] => Instruction::SPT((t, r).intotodo!()),
+                SPT(r) => {
+                    let (t, r) = r.into();
+                    [C, M, [t, Trit::Zero, Trit::Zero], r, ZERO, ZERO, ZERO, ZERO, ZERO].into()
+                },
+                // [C, S, [t, _, _], r, _, _, _, _, _] => Instruction::SST((t, r).intotodo!()),
+                SST(r) => {
+                    let (t, r) = r.into();
+                    [C, S, [t, Trit::Zero, Trit::Zero], r, ZERO, ZERO, ZERO, ZERO, ZERO].into()
+                },
+
+                // Register: NONE
+                // [B, A, [t, h, _], a, b, c, d, e, f]
+                // Trit::NOne => Instruction::BNER((t, a).into(), (t, b).into(), (t, c).into()),
+                BRR(r0, r1, r2) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    [B, ZERO, [t, Trit::NOne, Trit::Zero], r0, r1, r2, ZERO, ZERO, ZERO].into()
+                },
+                BNER(r0, r1, r2) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    [B, A, [t, Trit::NOne, Trit::Zero], r0, r1, r2, ZERO, ZERO, ZERO].into()
+                },
+                BGTR(r0, r1, r2) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    [B, B, [t, Trit::NOne, Trit::Zero], r0, r1, r2, ZERO, ZERO, ZERO].into()
+                },
+                BLTR(r0, r1, r2) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    [B, C, [t, Trit::NOne, Trit::Zero], r0, r1, r2, ZERO, ZERO, ZERO].into()
+                },
+                BEQR(r0, r1, r2) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    [B, D, [t, Trit::NOne, Trit::Zero], r0, r1, r2, ZERO, ZERO, ZERO].into()
+                },
+                BGEQR(r0, r1, r2) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    [B, E, [t, Trit::NOne, Trit::Zero], r0, r1, r2, ZERO, ZERO, ZERO].into()
+                },
+                BLEQR(r0, r1, r2) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    [B, F, [t, Trit::NOne, Trit::Zero], r0, r1, r2, ZERO, ZERO, ZERO].into()
+                },
+                BOFNR(r0, r1, r2) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    [B, G, [t, Trit::NOne, Trit::Zero], r0, r1, r2, ZERO, ZERO, ZERO].into()
+                },
+                BOFZR(r0, r1, r2) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    [B, H, [t, Trit::NOne, Trit::Zero], r0, r1, r2, ZERO, ZERO, ZERO].into()
+                },
+                BOFPR(r0, r1, r2) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    [B, I, [t, Trit::NOne, Trit::Zero], r0, r1, r2, ZERO, ZERO, ZERO].into()
+                },
+                BPNR(r0, r1, r2) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    [B, J, [t, Trit::NOne, Trit::Zero], r0, r1, r2, ZERO, ZERO, ZERO].into()
+                },
+                BPZR(r0, r1, r2) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    [B, K, [t, Trit::NOne, Trit::Zero], r0, r1, r2, ZERO, ZERO, ZERO].into()
+                },
+                BPPR(r0, r1, r2) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    [B, L, [t, Trit::NOne, Trit::Zero], r0, r1, r2, ZERO, ZERO, ZERO].into()
+                },
+
+                // Imm: ZERO
+                // [B, A, [t, h, _], a, b, c, d, e, f] => Instruction::BPZI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()
+                BRI(imm) => {
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [B, ZERO, [Trit::Zero; 3], parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]].into()
+                },
+                BNEI(imm) => {
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [B, A, [Trit::Zero; 3], parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]].into()
+                },
+                BGTI(imm) => {
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [B, B, [Trit::Zero; 3], parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]].into()
+                },
+                BLTI(imm) => {
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [B, C, [Trit::Zero; 3], parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]].into()
+                },
+                BEQI(imm) => {
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [B, D, [Trit::Zero; 3], parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]].into()
+                },
+                BGEQI(imm) => {
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [B, E, [Trit::Zero; 3], parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]].into()
+                },
+                BLEQI(imm) => {
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [B, F, [Trit::Zero; 3], parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]].into()
+                },
+                BOFNI(imm) => {
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [B, G, [Trit::Zero; 3], parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]].into()
+                },
+                BOFZI(imm) => {
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [B, H, [Trit::Zero; 3], parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]].into()
+                },
+                BOFPI(imm) => {
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [B, I, [Trit::Zero; 3], parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]].into()
+                },
+                BPNI(imm) => {
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [B, J, [Trit::Zero; 3], parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]].into()
+                },
+                BPZI(imm) => {
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [B, K, [Trit::Zero; 3], parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]].into()
+                },
+                BPPI(imm) => {
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [B, L, [Trit::Zero; 3], parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]].into()
+                },
+
+                // MemoryL PONE
+                // [B, A, [t, h, _], a, b, c, d, e, f]
+                BRM(r0, r1, r2, imm) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [B, ZERO, [t, Trit::POne, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                },
+                BNEM(r0, r1, r2, imm) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [B, A, [t, Trit::POne, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                },
+                BGTM(r0, r1, r2, imm) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [B, B, [t, Trit::POne, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                },
+                BLTM(r0, r1, r2, imm) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [B, C, [t, Trit::POne, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                },
+                BEQM(r0, r1, r2, imm) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [B, D, [t, Trit::POne, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                },
+                BGEQM(r0, r1, r2, imm) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [B, E, [t, Trit::POne, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                },
+                BLEQM(r0, r1, r2, imm) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [B, F, [t, Trit::POne, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                },
+                BOFNM(r0, r1, r2, imm) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [B, G, [t, Trit::POne, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                },
+                BOFZM(r0, r1, r2, imm) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [B, H, [t, Trit::POne, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                },
+                BOFPM(r0, r1, r2, imm) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [B, I, [t, Trit::POne, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                },
+                BPNM(r0, r1, r2, imm) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [B, J, [t, Trit::POne, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                },
+                BPZM(r0, r1, r2, imm) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [B, K, [t, Trit::POne, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                },
+                BPPM(r0, r1, r2, imm) => {
+                    let (t, r0) = r0.into();
+                    let (_, r1) = r1.into();
+                    let (_, r2) = r2.into();
+                    let parts: [[Trit; 3]; 3] = imm.into();
+                    [B, L, [t, Trit::POne, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
+                },
+
+                // [I, R, [t, _, _], r0, r1, _, _, _, _] => {
+                //     Instruction::INR((t, r0).into(), (t, r1).into())
+                // }
+                INR(dest, loc) => {
+                    let (t, r0) = dest.into();
+                    let (_, r1) = loc.into();
+                    [I, R, [t, Trit::Zero, Trit::Zero], r0, r1, ZERO, ZERO, ZERO, ZERO].into()
+                },
+                // [O, R, [t, _, _], r0, r1, _, _, _, _] => {
+                //     Instruction::OUTR((t, r0).into(), (t, r1).into())
+                // }
+                OUTR(dest, loc) => {
+                    let (t, r0) = dest.into();
+                    let (_, r1) = loc.into();
+                    [I, R, [t, Trit::Zero, Trit::Zero], r0, r1, ZERO, ZERO, ZERO, ZERO].into()
+                },
+                // [O, I, [t, _, _], r, i0, i1, i2, i3, i4] => Instruction::OUTI(
+                //     (t, r).into(),
+                //     [i0, i1, i2, i3, i4, ZERO, ZERO, ZERO, ZERO].into(),
+                OUTI(dest, imm) => {
+                    let (t, r0) = dest.into();
+                    let parts: [[Trit; 3]; 9] = imm.into();
+                    [I, R, [t, Trit::Zero, Trit::Zero], r0, parts[0], parts[1], parts[2], parts[3], parts[4]].into()
+                },
+            }
+    }
 }
 

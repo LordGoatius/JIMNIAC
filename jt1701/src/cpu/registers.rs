@@ -48,7 +48,9 @@ pub enum RegisterNumber {
     R11,
     R12,
     R13,
+    /// R12
     SP, // => R12
+    /// R13
     BP, // => R13
 }
 
@@ -77,6 +79,95 @@ pub const SP_TRYTE: Register = Register {
     num: RegisterNumber::SP,
     size: WordOrTryte::Tryte,
 };
+
+
+impl From<Register> for Trit {
+    fn from(value: Register) -> Self {
+        match value.size {
+            WordOrTryte::Tryte => Trit::NOne,
+            WordOrTryte::Word => Trit::Zero,
+        }
+    }
+}
+
+impl From<Register> for [Trit; 3] {
+    fn from(value: Register) -> Self {
+        match value.num {
+            RegisterNumber::RN13 => [Trit::NOne, Trit::NOne, Trit::NOne],
+            RegisterNumber::RN12 => [Trit::NOne, Trit::NOne, Trit::Zero],
+            RegisterNumber::RN11 => [Trit::NOne, Trit::NOne, Trit::POne],
+            RegisterNumber::RN10 => [Trit::NOne, Trit::Zero, Trit::NOne],
+            RegisterNumber::RN9 => [Trit::NOne, Trit::Zero, Trit::Zero],
+            RegisterNumber::RN8 => [Trit::NOne, Trit::Zero, Trit::POne],
+            RegisterNumber::RN7 => [Trit::NOne, Trit::POne, Trit::NOne],
+            RegisterNumber::RN6 => [Trit::NOne, Trit::POne, Trit::Zero],
+            RegisterNumber::RN5 => [Trit::NOne, Trit::POne, Trit::POne],
+            RegisterNumber::RN4 => [Trit::Zero, Trit::NOne, Trit::NOne],
+            RegisterNumber::RN3 => [Trit::Zero, Trit::NOne, Trit::Zero],
+            RegisterNumber::RN2 => [Trit::Zero, Trit::NOne, Trit::POne],
+            RegisterNumber::RN1 => [Trit::Zero, Trit::Zero, Trit::NOne],
+            RegisterNumber::R0 => [Trit::Zero, Trit::Zero, Trit::Zero],
+            RegisterNumber::R1 => [Trit::Zero, Trit::Zero, Trit::POne],
+            RegisterNumber::R2 => [Trit::Zero, Trit::POne, Trit::NOne],
+            RegisterNumber::R3 => [Trit::Zero, Trit::POne, Trit::Zero],
+            RegisterNumber::R4 => [Trit::Zero, Trit::POne, Trit::POne],
+            RegisterNumber::R5 => [Trit::POne, Trit::NOne, Trit::NOne],
+            RegisterNumber::R6 => [Trit::POne, Trit::NOne, Trit::Zero],
+            RegisterNumber::R7 => [Trit::POne, Trit::NOne, Trit::POne],
+            RegisterNumber::R8 => [Trit::POne, Trit::Zero, Trit::NOne],
+            RegisterNumber::R9 => [Trit::POne, Trit::Zero, Trit::Zero],
+            RegisterNumber::R10 => [Trit::POne, Trit::Zero, Trit::POne],
+            RegisterNumber::R11 => [Trit::POne, Trit::POne, Trit::NOne],
+            RegisterNumber::R12 => [Trit::POne, Trit::POne, Trit::Zero],
+            RegisterNumber::R13 => [Trit::POne, Trit::POne, Trit::POne],
+            RegisterNumber::SP => [Trit::POne, Trit::POne, Trit::Zero],
+            RegisterNumber::BP => [Trit::POne, Trit::POne, Trit::POne],
+        }
+    }
+}
+
+impl From<Register> for (Trit, [Trit; 3]) {
+    fn from(value: Register) -> Self {
+        let trit = match value.size {
+            WordOrTryte::Tryte => Trit::NOne,
+            WordOrTryte::Word => Trit::Zero,
+        };
+
+        let arr = match value.num {
+            RegisterNumber::RN13 => [Trit::NOne, Trit::NOne, Trit::NOne],
+            RegisterNumber::RN12 => [Trit::NOne, Trit::NOne, Trit::Zero],
+            RegisterNumber::RN11 => [Trit::NOne, Trit::NOne, Trit::POne],
+            RegisterNumber::RN10 => [Trit::NOne, Trit::Zero, Trit::NOne],
+            RegisterNumber::RN9 => [Trit::NOne, Trit::Zero, Trit::Zero],
+            RegisterNumber::RN8 => [Trit::NOne, Trit::Zero, Trit::POne],
+            RegisterNumber::RN7 => [Trit::NOne, Trit::POne, Trit::NOne],
+            RegisterNumber::RN6 => [Trit::NOne, Trit::POne, Trit::Zero],
+            RegisterNumber::RN5 => [Trit::NOne, Trit::POne, Trit::POne],
+            RegisterNumber::RN4 => [Trit::Zero, Trit::NOne, Trit::NOne],
+            RegisterNumber::RN3 => [Trit::Zero, Trit::NOne, Trit::Zero],
+            RegisterNumber::RN2 => [Trit::Zero, Trit::NOne, Trit::POne],
+            RegisterNumber::RN1 => [Trit::Zero, Trit::Zero, Trit::NOne],
+            RegisterNumber::R0 => [Trit::Zero, Trit::Zero, Trit::Zero],
+            RegisterNumber::R1 => [Trit::Zero, Trit::Zero, Trit::POne],
+            RegisterNumber::R2 => [Trit::Zero, Trit::POne, Trit::NOne],
+            RegisterNumber::R3 => [Trit::Zero, Trit::POne, Trit::Zero],
+            RegisterNumber::R4 => [Trit::Zero, Trit::POne, Trit::POne],
+            RegisterNumber::R5 => [Trit::POne, Trit::NOne, Trit::NOne],
+            RegisterNumber::R6 => [Trit::POne, Trit::NOne, Trit::Zero],
+            RegisterNumber::R7 => [Trit::POne, Trit::NOne, Trit::POne],
+            RegisterNumber::R8 => [Trit::POne, Trit::Zero, Trit::NOne],
+            RegisterNumber::R9 => [Trit::POne, Trit::Zero, Trit::Zero],
+            RegisterNumber::R10 => [Trit::POne, Trit::Zero, Trit::POne],
+            RegisterNumber::R11 => [Trit::POne, Trit::POne, Trit::NOne],
+            RegisterNumber::R12 => [Trit::POne, Trit::POne, Trit::Zero],
+            RegisterNumber::R13 => [Trit::POne, Trit::POne, Trit::POne],
+            RegisterNumber::SP => [Trit::POne, Trit::POne, Trit::Zero],
+            RegisterNumber::BP => [Trit::POne, Trit::POne, Trit::POne],
+        };
+
+        (trit, arr)
+    }
+}
 
 impl From<(Trit, [Trit; 3])> for Register {
     /// size:
@@ -421,28 +512,28 @@ pub mod test {
         let mut reg_file = RegisterFile::default();
 
         reg_file.set_value(
-            Register::to_register(Trit::Zero, [Trit::POne, Trit::Zero, Trit::NOne]),
+            (Trit::Zero, [Trit::POne, Trit::Zero, Trit::NOne]).into(),
             Word([Trit::POne; 27]),
         );
 
         assert_eq!(
-            reg_file.get_value(Register::to_register(
+            reg_file.get_value((
                 Trit::Zero,
                 [Trit::POne, Trit::Zero, Trit::NOne]
-            )),
+            ).into()),
             Left(Word([Trit::POne; 27]))
         );
 
         reg_file.set_value(
-            Register::to_register(Trit::NOne, [Trit::POne, Trit::Zero, Trit::NOne]),
+            (Trit::NOne, [Trit::POne, Trit::Zero, Trit::NOne]).into(),
             Tryte([Trit::POne; 9]).into(),
         );
 
         assert_eq!(
-            reg_file.get_value(Register::to_register(
+            reg_file.get_value((
                 Trit::NOne,
                 [Trit::POne, Trit::Zero, Trit::NOne]
-            ),),
+            ).into()),
             Right(Tryte([Trit::POne; 9]).into())
         );
     }

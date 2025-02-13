@@ -63,6 +63,12 @@ impl From<[Trit; 9]> for Tryte {
     }
 }
 
+impl From<Tryte> for [[Trit; 3]; 3] {
+    fn from(value: Tryte) -> Self {
+        unsafe { std::mem::transmute(value.0) }
+    }
+}
+
 impl From<[[Trit; 3]; 3]> for Tryte {
     fn from(value: [[Trit; 3]; 3]) -> Self {
         Tryte([

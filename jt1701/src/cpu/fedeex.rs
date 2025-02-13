@@ -6,18 +6,18 @@ use crate::tryte::Tryte;
 use crate::{word::Word, Trit};
 
 impl Cpu {
-    fn fetch(&mut self) {
-        use Instruction::*;
+    // (fetch/execute)
+    fn fexecute(&mut self) {
         'main: loop {
+            use Instruction::*;
             let instruction = self.stack.get_word(self.program_counter);
-            let instruction = Cpu::decode(instruction);
-            match instruction {
+            let instr = instruction.into();
+            match instr {
                 LHT(register) => {
                     self.lht(register);
                     self.inc_pc();
                 }
                 HLT => {
-                    self.hlt();
                     break 'main;
                 }
                 INT(interrupt) => {
@@ -302,332 +302,51 @@ impl Cpu {
             }
         }
     }
-
-    fn decode(instr: Word) -> Instruction {
-        let instr: [[Trit; 3]; 9] = instr.into();
-        match instr {
-            // [_, _, _, _, _, _, _, _, _] => Instruction::
-            // CPU
-            [L, I, T, reg, [t, _, _], _, _, _, _] => Instruction::LHT((t, reg).into()),
-            [H, L, T, ..] => Instruction::HLT,
-            [I, N, T, t0, t1, t2, ..] => Instruction::INT([t0, t1, t2].into()),
-            [W, F, I, _, _, _, _, _, _] => Instruction::WFI,
-            [S, T, I, _, _, _, _, _, _] => Instruction::STI,
-            [B, T, I, _, _, _, _, _, _] => Instruction::BTI,
-            // LOAD
-            [L, R, [t, _, _], d, r, _, i0, i1, i2] => {
-                Instruction::LDRI((t, d).into(), (t, r).into(), [i0, i1, i2].into())
-            }
-            [L, I, [t, _, _], d, r0, r1, ZERO, ZERO, ZERO] => {
-                Instruction::LDRR((t, d).into(), (t, r0).into(), (t, r1).into())
-            }
-            [L, B, [t, _, _], d, r0, r1, i0, i1, i2] => Instruction::LDRRI(
-                (t, d).into(),
-                (t, r0).into(),
-                (t, r1).into(),
-                [i0, i1, i2].into(),
-            ),
-            [L, P, [t, _, _], r, i0, i1, i2, i3, i4] => Instruction::LDRPCI(
-                (t, r).into(),
-                [i0, i1, i2, i3, i4, ZERO, ZERO, ZERO, ZERO].into(),
-            ),
-            // STORE
-            [S, R, [t, _, _], d, r, _, i0, i1, i2] => {
-                Instruction::STRI((t, d).into(), (t, r).into(), [i0, i1, i2].into())
-            }
-            [S, I, [t, _, _], d, r0, r1, ZERO, ZERO, ZERO] => {
-                Instruction::STRR((t, d).into(), (t, r0).into(), (t, r1).into())
-            }
-            [S, B, [t, _, _], d, r0, r1, i0, i1, i2] => Instruction::STRRI(
-                (t, d).into(),
-                (t, r0).into(),
-                (t, r1).into(),
-                [i0, i1, i2].into(),
-            ),
-            [S, P, [t, _, _], r, i0, i1, i2, i3, i4] => Instruction::STRPCI(
-                (t, r).into(),
-                [i0, i1, i2, i3, i4, ZERO, ZERO, ZERO, ZERO].into(),
-            ),
-            // MOV
-            [M, I, [t, _, _], r, i0, i1, i2, i3, i4] => Instruction::MOVRI(
-                (t, r).into(),
-                [i0, i1, i2, i3, i4, ZERO, ZERO, ZERO, ZERO].into(),
-            ),
-            [M, R, [t, _, _], r0, r1, _, _, _, _] => {
-                Instruction::MOVRR((t, r0).into(), (t, r1).into())
-            }
-            // BIT
-            [O, W, O, i0, i1, i2, d, r, ZERO] => Instruction::OWO(todo!(), todo!(), todo!()),
-            [U, W, U, i0, i1, i2, d, r, ZERO] => Instruction::UWU(todo!(), todo!(), todo!()),
-            // ALU
-            [A, D, [t, _, _], i0, i1, i2, d, r0, r1] => Instruction::ADD(
-                (t, d).into(),
-                [i0, i1, i2].into(),
-                (t, r0).into(),
-                (t, r1).into(),
-            ),
-            [M, U, [t, _, _], i0, i1, i2, d, r0, r1] => Instruction::MUL(
-                (t, d).into(),
-                [i0, i1, i2].into(),
-                (t, r0).into(),
-                (t, r1).into(),
-            ),
-            [S, U, [t, _, _], i0, i1, i2, d, r0, r1] => Instruction::SUB(
-                (t, d).into(),
-                [i0, i1, i2].into(),
-                (t, r0).into(),
-                (t, r1).into(),
-            ),
-            [E, Q, [t, _, _], i0, i1, i2, d, r0, r1] => Instruction::EQOT(
-                (t, d).into(),
-                [i0, i1, i2].into(),
-                (t, r0).into(),
-                (t, r1).into(),
-            ),
-            [E, R, [t, _, _], i0, i1, i2, d, r0, r1] => Instruction::EREM(
-                (t, d).into(),
-                [i0, i1, i2].into(),
-                (t, r0).into(),
-                (t, r1).into(),
-            ),
-            // BIT
-            [N, O, [t, _, _], i0, i1, i2, d, r, _] => {
-                Instruction::NOT((t, d).into(), (t, r).into())
-            }
-            [L, S, [t, _, _], i0, i1, i2, d, r0, r1] => {
-                Instruction::LSH((t, d).into(), (t, r0).into(), [i0, i1, i2].into())
-            }
-            [R, S, [t, _, _], i0, i1, i2, d, r0, r1] => {
-                Instruction::RSH((t, d).into(), (t, r0).into(), [i0, i1, i2].into())
-            }
-            [A, N, [t, _, _], i0, i1, i2, d, r0, r1] => {
-                Instruction::ANDR((t, d).into(), (t, r0).into(), (t, r1).into())
-            }
-            [O, R, [t, _, _], i0, i1, i2, d, r0, r1] => {
-                Instruction::ORR((t, d).into(), (t, r0).into(), (t, r1).into())
-            }
-            [R, O, [t, Trit::POne, _], i0, i1, i2, d, r0, r1] => {
-                Instruction::ROTR((t, d).into(), (t, r0).into(), (t, r1).into())
-            }
-            [R, O, [t, Trit::NOne, _], i0, i1, i2, d, r0, r1] => {
-                Instruction::ROTI((t, d).into(), (t, r0).into(), todo!())
-            }
-            // Stack
-            [P, R, [t, _, _], r0, r1, r2, _, _, _] => {
-                Instruction::PUSHR3((t, r0).into(), (t, r1).into(), (t, r2).into())
-            }
-            [P, I, [t, _, _], i0, i1, i2, i3, i4, i5] => {
-                Instruction::PUSHIMWORD([i0, i1, i2, i3, i4, i5, ZERO, ZERO, ZERO].into())
-            }
-            [P, T, [t, _, _], i0, i1, i2, ZERO, ZERO, ZERO] => {
-                Instruction::PUSHIMTRYTE([i0, i1, i2].into())
-            }
-            [P, M, [t, _, _], d, r0, r1, i0, i1, i2] => Instruction::PUSHMEM(
-                (t, d).into(),
-                (t, r0).into(),
-                (t, r1).into(),
-                [i0, i1, i2].into(),
-            ),
-            [P, P, [t, _, _], d, _, _, _, _, _] => Instruction::POP((t, d).into()),
-            [C, P, [t, _, _], r0, r1, _, _, _, _] => {
-                Instruction::CMP((t, r0).into(), (t, r1).into())
-            }
-            [C, M, [t, _, _], r, _, _, _, _, _] => Instruction::SPT((t, r).into()),
-            [C, S, [t, _, _], r, _, _, _, _, _] => Instruction::SST((t, r).into()),
-            [B, ZERO, [t, h, _], a, b, c, d, e, f] => match h {
-                // Register
-                Trit::NOne => Instruction::BRR((t, a).into(), (t, b).into(), (t, c).into()),
-                // Imm
-                Trit::Zero => Instruction::BRI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
-                // Mem
-                Trit::POne => Instruction::BRM(
-                    (t, a).into(),
-                    (t, b).into(),
-                    (t, c).into(),
-                    [d, e, f].into(),
-                ),
-            },
-            [B, A, [t, h, _], a, b, c, d, e, f] => match h {
-                // Register
-                Trit::NOne => Instruction::BNER((t, a).into(), (t, b).into(), (t, c).into()),
-                // Imm
-                Trit::Zero => Instruction::BNEI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
-                // Mem
-                Trit::POne => Instruction::BNEM(
-                    (t, a).into(),
-                    (t, b).into(),
-                    (t, c).into(),
-                    [d, e, f].into(),
-                ),
-            },
-            [B, B, [t, h, _], a, b, c, d, e, f] => match h {
-                // Register
-                Trit::NOne => Instruction::BGTR((t, a).into(), (t, b).into(), (t, c).into()),
-                // Imm
-                Trit::Zero => Instruction::BGTI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
-                // Mem
-                Trit::POne => Instruction::BGTM(
-                    (t, a).into(),
-                    (t, b).into(),
-                    (t, c).into(),
-                    [d, e, f].into(),
-                ),
-            },
-            [B, C, [t, h, _], a, b, c, d, e, f] => match h {
-                // Register
-                Trit::NOne => Instruction::BLTR((t, a).into(), (t, b).into(), (t, c).into()),
-                // Imm
-                Trit::Zero => Instruction::BLTI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
-                // Mem
-                Trit::POne => Instruction::BLTM(
-                    (t, a).into(),
-                    (t, b).into(),
-                    (t, c).into(),
-                    [d, e, f].into(),
-                ),
-            },
-            [B, D, [t, h, _], a, b, c, d, e, f] => match h {
-                // Register
-                Trit::NOne => Instruction::BEQR((t, a).into(), (t, b).into(), (t, c).into()),
-                // Imm
-                Trit::Zero => Instruction::BEQI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
-                // Mem
-                Trit::POne => Instruction::BEQM(
-                    (t, a).into(),
-                    (t, b).into(),
-                    (t, c).into(),
-                    [d, e, f].into(),
-                ),
-            },
-            [B, E, [t, h, _], a, b, c, d, e, f] => match h {
-                // Register
-                Trit::NOne => Instruction::BGEQR((t, a).into(), (t, b).into(), (t, c).into()),
-                // Imm
-                Trit::Zero => Instruction::BGEQI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
-                // Mem
-                Trit::POne => Instruction::BGEQM(
-                    (t, a).into(),
-                    (t, b).into(),
-                    (t, c).into(),
-                    [d, e, f].into(),
-                ),
-            },
-            [B, F, [t, h, _], a, b, c, d, e, f] => match h {
-                // Register
-                Trit::NOne => Instruction::BLEQR((t, a).into(), (t, b).into(), (t, c).into()),
-                // Imm
-                Trit::Zero => Instruction::BLEQI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
-                // Mem
-                Trit::POne => Instruction::BLEQM(
-                    (t, a).into(),
-                    (t, b).into(),
-                    (t, c).into(),
-                    [d, e, f].into(),
-                ),
-            },
-            [B, G, [t, h, _], a, b, c, d, e, f] => match h {
-                // Register
-                Trit::NOne => Instruction::BOFNR((t, a).into(), (t, b).into(), (t, c).into()),
-                // Imm
-                Trit::Zero => Instruction::BOFNI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
-                // Mem
-                Trit::POne => Instruction::BOFNM(
-                    (t, a).into(),
-                    (t, b).into(),
-                    (t, c).into(),
-                    [d, e, f].into(),
-                ),
-            },
-            [B, H, [t, h, _], a, b, c, d, e, f] => match h {
-                // Register
-                Trit::NOne => Instruction::BOFZR((t, a).into(), (t, b).into(), (t, c).into()),
-                // Imm
-                Trit::Zero => Instruction::BOFZI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
-                // Mem
-                Trit::POne => Instruction::BOFZM(
-                    (t, a).into(),
-                    (t, b).into(),
-                    (t, c).into(),
-                    [d, e, f].into(),
-                ),
-            },
-            [B, I, [t, h, _], a, b, c, d, e, f] => match h {
-                // Register
-                Trit::NOne => Instruction::BOFPR((t, a).into(), (t, b).into(), (t, c).into()),
-                // Imm
-                Trit::Zero => Instruction::BOFPI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
-                // Mem
-                Trit::POne => Instruction::BOFPM(
-                    (t, a).into(),
-                    (t, b).into(),
-                    (t, c).into(),
-                    [d, e, f].into(),
-                ),
-            },
-            [B, J, [t, h, _], a, b, c, d, e, f] => match h {
-                // Register
-                Trit::NOne => Instruction::BPNR((t, a).into(), (t, b).into(), (t, c).into()),
-                // Imm
-                Trit::Zero => Instruction::BPNI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
-                // Mem
-                Trit::POne => Instruction::BPNM(
-                    (t, a).into(),
-                    (t, b).into(),
-                    (t, c).into(),
-                    [d, e, f].into(),
-                ),
-            },
-            [B, K, [t, h, _], a, b, c, d, e, f] => match h {
-                // Register
-                Trit::NOne => Instruction::BPZR((t, a).into(), (t, b).into(), (t, c).into()),
-                // Imm
-                Trit::Zero => Instruction::BPZI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
-                // Mem
-                Trit::POne => Instruction::BPZM(
-                    (t, a).into(),
-                    (t, b).into(),
-                    (t, c).into(),
-                    [d, e, f].into(),
-                ),
-            },
-            [B, L, [t, h, _], a, b, c, d, e, f] => match h {
-                // Register
-                Trit::NOne => Instruction::BPPR((t, a).into(), (t, b).into(), (t, c).into()),
-                // Imm
-                Trit::Zero => Instruction::BPPI([a, b, c, d, e, f, ZERO, ZERO, ZERO].into()),
-                // Mem
-                Trit::POne => Instruction::BPPM(
-                    (t, a).into(),
-                    (t, b).into(),
-                    (t, c).into(),
-                    [d, e, f].into(),
-                ),
-            },
-            [I, R, [t, _, _], r0, r1, _, _, _, _] => {
-                Instruction::INR((t, r0).into(), (t, r1).into())
-            }
-            [O, R, [t, _, _], r0, r1, _, _, _, _] => {
-                Instruction::OUTR((t, r0).into(), (t, r1).into())
-            }
-            [O, I, [t, _, _], r, i0, i1, i2, i3, i4] => Instruction::OUTI(
-                (t, r).into(),
-                [i0, i1, i2, i3, i4, ZERO, ZERO, ZERO, ZERO].into(),
-            ),
-
-            _ => panic!("illegal instruction (interrupts not implemented yet)"),
-        }
-    }
 }
 
 #[cfg(test)]
 pub mod test {
-    use crate::{cpu::{jt1701isa::{self, jt1701}, consts::*, Cpu}, trits::Trit, word::Word};
+    use crate::{cpu::{consts::*, jt1701isa::{self, jt1701, Instruction}, Cpu}, septivigntimal::*, trits::Trit, tryte::Tryte, word::{consts::THREE_WORD, Word}};
 
     #[test]
     fn fedeex() {
+        use super::Instruction::*;
         let mut cpu = Cpu::default();
-        cpu.program_counter = Word([Trit::NOne; 27]);
+        cpu.program_counter = Word::default();
 
-        // cpu.movri(dest, imm);
+        // 0  mov %RN11, 1
+        // 3  mov %RN13, n
+        // 6  mov %RN12, 1
+        // 9  cmp %RN13, %RN11
+        // 12 bleqi 24
+        // 15 mul %RN12, %RN12, %RN13
+        // 18 add %RN13, %RN13, %R0, -1
+        // 21 bri 9
+        // 24 hlt
+        let instrs = vec![
+            // 1
+            MOVRI(RN11_TRYTE, [[Trit::POne, Trit::Zero, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            // 6
+            MOVRI(RN13_TRYTE, [[Trit::Zero, Trit::Zero, Trit::POne], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            // 1
+            MOVRI(RN12_TRYTE, [[Trit::POne, Trit::Zero, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            CMP(RN13_WORD, RN11_WORD),
+            // 24
+            BLEQI([[Trit::Zero, Trit::NOne, Trit::Zero], [Trit::POne, Trit::Zero, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            MUL(RN12_WORD, Tryte::default(), RN12_WORD, RN13_WORD),
+            ADD(RN13_WORD, [[Trit::NOne, Trit::Zero, Trit::Zero], ZERO, ZERO].into(), RN13_WORD, R0_WORD),
+            BRI([[Trit::Zero, Trit::Zero, Trit::POne], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            HLT
+        ];
+
+        let mut loc = cpu.program_counter;
+        for i in &instrs {
+            cpu.stack.insert_word(loc, (*i).into());
+            loc = (loc + THREE_WORD).result;
+        }
+
+        cpu.fexecute();
+        let val: isize = cpu.register_file.get_word(RN12_WORD).into();
+        println!("{val:?}");
     }
 }
