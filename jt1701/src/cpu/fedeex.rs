@@ -9,13 +9,10 @@ use crate::{word::Word, Trit};
 impl Cpu {
     // (fetch/execute)
     fn fexecute(&mut self) {
-        let mut i = 0;
         'main: loop {
             use Instruction::*;
             let instruction = self.stack.get_word(self.program_counter);
             let instr = instruction.into();
-            println!("{i}");
-            println!("{instr:?}");
             match instr {
                 LHT(register) => {
                     self.lht(register);
@@ -304,7 +301,6 @@ impl Cpu {
                     self.inc_pc();
                 }
             }
-            i += 1;
         }
     }
 }
