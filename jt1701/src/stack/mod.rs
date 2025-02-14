@@ -1,6 +1,6 @@
 use std::{collections::HashMap, ops::{Deref, DerefMut}, usize};
 
-use crate::{tryte::Tryte, word::Word};
+use ternary::{tryte::Tryte, word::Word};
 
 pub mod hash;
 pub mod errors;
@@ -47,7 +47,7 @@ impl Default for Chunk {
 
 #[cfg(test)]
 pub mod test {
-    use crate::{trits::Trit, tryte::Tryte, word::Word};
+    use ternary::{trits::Trit, tryte::Tryte, word::Word};
 
 
     use super::{Stack, PAGE_SIZE};

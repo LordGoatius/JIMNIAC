@@ -1,7 +1,6 @@
 #![expect(unused)]
 use std::ops::{BitAnd, Not, Shl};
 
-use errors::CpuError;
 use jt1701isa::jt1701;
 use ports::Ports;
 use registers::{
@@ -10,10 +9,14 @@ use registers::{
 };
 use statusword::StatusWord;
 
+use ternary::{
+    errors::DivByZeroError, trits::Trit, tryte::Tryte, word::Word
+};
+
 use crate::{
-    septivigntimal::*, stack::Stack, trits::Trit, tryte::Tryte, word::{
-        consts::{ONE_WORD, THREE_WORD},
-        Word,
+    word::{ONE_WORD, THREE_WORD},
+    tryte::{ONE_TRYTE, THREE_TRYTE},
+    septivigntimal::*, stack::Stack, word::{
     }, GetStatus
 };
 
@@ -47,11 +50,6 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    pub fn run_program(&mut self, program: Vec<Tryte>) -> Result<(), CpuError> {
-        self.copy_program_to_stack(Word([Trit::NOne; 27]), program);
-        todo!()
-    }
-
     fn copy_program_to_stack(&mut self, begin: Word, program: Vec<Tryte>) {
         let mut addr = begin;
 
@@ -370,7 +368,7 @@ impl jt1701 for Cpu {
         imm: Tryte,
         src0: Register,
         src1: Register,
-    ) -> Result<(), CpuError> {
+    ) -> Result<(), DivByZeroError> {
         let tmp = self
             .register_file
             .get_value(src1)
@@ -392,7 +390,7 @@ impl jt1701 for Cpu {
         imm: Tryte,
         src0: Register,
         src1: Register,
-    ) -> Result<(), CpuError> {
+    ) -> Result<(), DivByZeroError> {
         let tmp = self
             .register_file
             .get_value(src1)
@@ -1310,16 +1308,16 @@ impl jt1701 for Cpu {
 
 #[cfg(test)]
 pub mod test {
-    use crate::{cpu::{jt1701isa::jt1701, registers::SP_WORD}, word::consts::{ONE_TRYTE, THREE_TRYTE, THREE_WORD}};
+    use crate::{cpu::{jt1701isa::jt1701, registers::SP_WORD}, tryte::{ONE_TRYTE, THREE_TRYTE}, word::{ONE_WORD, THREE_WORD}};
 
     #[test]
     fn test_cpu_instr() {
         use crate::cpu::jt1701isa::Instruction;
         use crate::cpu::{consts::*, Cpu};
         use crate::septivigntimal::*;
-        use crate::trits::Trit;
-        use crate::word::Word;
-        use crate::tryte::Tryte;
+        use ternary::trits::Trit;
+        use ternary::word::Word;
+        use ternary::tryte::Tryte;
         use super::jt1701isa::Instruction::*;
 
         let word: Word = [[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into();

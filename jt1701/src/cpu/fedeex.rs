@@ -3,8 +3,7 @@ use super::Cpu;
 use crate::cpu::jt1701isa::{jt1701, Instruction};
 use crate::cpu::registers::SP_WORD;
 use crate::septivigntimal::*;
-use crate::tryte::Tryte;
-use crate::{word::Word, Trit};
+use ternary::{tryte::Tryte, word::Word, trits::Trit};
 
 impl Cpu {
     // (fetch/execute)
@@ -307,7 +306,8 @@ impl Cpu {
 
 #[cfg(test)]
 pub mod test {
-    use crate::{cpu::{consts::*, jt1701isa::{self, jt1701, Instruction}, registers::SP_WORD, Cpu}, septivigntimal::*, trits::Trit, tryte::Tryte, word::{consts::THREE_WORD, Word}};
+    use crate::{cpu::{consts::*, jt1701isa::{self, jt1701, Instruction}, registers::SP_WORD, Cpu}, septivigntimal::*};
+    use ternary::{trits::Trit, tryte::Tryte, word::{consts::THREE_WORD, Word}};
 
     #[test]
     fn fedeex() {

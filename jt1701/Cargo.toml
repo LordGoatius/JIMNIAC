@@ -5,6 +5,8 @@ version = "0.2.0"
 edition = "2024"
 
 [dependencies]
+ternary = { path = "../ternary" }
+septivigntimal = { path = "../septivigntimal" }
 itertools.workspace = true
 
 [package.metadata.docs.rs]

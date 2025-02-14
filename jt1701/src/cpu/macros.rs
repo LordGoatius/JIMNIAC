@@ -1,5 +1,5 @@
 pub mod septivingtimal {
-    use crate::Trit::{self, *};
+    use ternary::trits::Trit::{self, *};
 
     const Z:    [Trit; 3] = [NOne, NOne, NOne];
     const Y:    [Trit; 3] = [Zero, NOne, NOne];

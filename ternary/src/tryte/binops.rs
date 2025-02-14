@@ -1,4 +1,4 @@
-use crate::cpu::errors::CpuError;
+use crate::errors::DivByZeroError;
 
 use super::*;
 use std::ops::{Add, Div, Mul, Rem, Sub};
@@ -125,7 +125,7 @@ impl Mul<&Trit> for Tryte {
 }
 
 impl Div for Tryte {
-    type Output = Result<Tryte, CpuError>;
+    type Output = Result<Tryte, DivByZeroError>;
 
     fn div(self, rhs: Self) -> Self::Output {
         self.euclidean_division(rhs).map(|res| res.quotient)
@@ -133,16 +133,16 @@ impl Div for Tryte {
 }
 
 impl Rem for Tryte {
-    type Output = Result<Tryte, CpuError>;
+    type Output = Result<Tryte, DivByZeroError>;
     fn rem(self, rhs: Self) -> Self::Output {
         self.euclidean_division(rhs).map(|res| res.remainder)
     }
 }
 
 impl Tryte {
-    fn euclidean_division(self, rhs: Self) -> Result<EuclideanDivisionResult, CpuError> {
+    fn euclidean_division(self, rhs: Self) -> Result<EuclideanDivisionResult, DivByZeroError> {
         if rhs == Tryte::default() {
-            return Err(CpuError::DivByZero);
+            return Err(DivByZeroError);
         }
 
         let len = self.len();

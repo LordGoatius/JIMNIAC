@@ -1,6 +1,7 @@
-use crate::{cpu::registers, septivigntimal::*, trits::Trit, tryte::Tryte, word::Word};
+use crate::{cpu::registers, septivigntimal::*};
+use ternary::{errors::DivByZeroError, trits::Trit, tryte::Tryte, word::Word};
 
-use super::{errors::CpuError, registers::Register};
+use super::registers::Register;
 
 #[allow(non_camel_case_types)]
 pub trait jt1701 {
@@ -70,10 +71,10 @@ pub trait jt1701 {
     fn sub(&mut self, dest: Register, imm: Tryte, src0: Register, src1: Register);
 
     /// d = s0 / (s1 + imm)
-    fn eqot(&mut self, dest: Register, imm: Tryte, src0: Register, src1: Register) -> Result<(), CpuError>;
+    fn eqot(&mut self, dest: Register, imm: Tryte, src0: Register, src1: Register) -> Result<(), DivByZeroError>;
 
     /// d = s0 % (s1 + imm)
-    fn erem(&mut self, dest: Register, imm: Tryte, src0: Register, src1: Register) -> Result<(), CpuError>;
+    fn erem(&mut self, dest: Register, imm: Tryte, src0: Register, src1: Register) -> Result<(), DivByZeroError>;
 
     //=== Trit ===//
     /// d = ~s
@@ -618,7 +619,7 @@ impl From<Word> for Instruction {
 impl From<Instruction> for Word {
     fn from(value: Instruction) -> Self {
         use self::Instruction::*;
-        use crate::trits::Trit;
+        use ternary::trits::Trit;
 
         match value {
                 // [L, I, T, reg, [t, _, _], _, _, _, _] => Instruction::LHT((t, reg).into()),
@@ -1120,8 +1121,7 @@ pub mod test {
     use crate::cpu::jt1701isa::Instruction;
     use crate::cpu::{consts::*, Cpu};
     use crate::septivigntimal::ZERO;
-    use crate::trits::Trit;
-    use crate::word::Word;
+    use ternary::{trits::Trit, word::Word};
 
     #[test]
     #[rustfmt::ignore]

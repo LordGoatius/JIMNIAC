@@ -3,16 +3,14 @@ use std::{
     ops::{Add, Deref, DerefMut, Index, IndexMut},
 };
 
-use crate::{tryte::Tryte, GetStatus};
-use crate::word::Word;
-use crate::{trits::Trit, tryte::TryteAddResult, word::WordAddResult};
+use crate::GetStatus;
+use ternary::{errors::DivByZeroError, trits::Trit, tryte::{Tryte, TryteAddResult}, word::{Word, WordAddResult}};
 
 use itertools::{
     Either,
     Either::{Left, Right},
 };
 
-use super::errors::CpuError;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WordOrTryte {
     Word,
@@ -397,8 +395,8 @@ pub trait BimapEitherOps {
     fn bimap_add_tryte(self, rhs: Tryte) -> Either<WordAddResult, TryteAddResult>;
     fn bimap_sub(self, rhs: Self) -> Either<WordAddResult, TryteAddResult>;
     fn bimap_mul(self, rhs: Self) -> Either<Word, Tryte>;
-    fn bimap_div(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError>;
-    fn bimap_mod(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError>;
+    fn bimap_div(self, rhs: Self) -> Result<Either<Word, Tryte>, DivByZeroError>;
+    fn bimap_mod(self, rhs: Self) -> Result<Either<Word, Tryte>, DivByZeroError>;
     fn bimap_and(self, rhs: Self) -> Either<Word, Tryte>;
     fn bimap_or(self, rhs: Self) -> Either<Word, Tryte>;
     fn as_word(self) -> Word;
@@ -468,7 +466,7 @@ impl BimapEitherOps for Either<Word, Tryte> {
         self.map_either(|r| r * rhs.unwrap_left(), |r| r * rhs.unwrap_right())
     }
 
-    fn bimap_div(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError> {
+    fn bimap_div(self, rhs: Self) -> Result<Either<Word, Tryte>, DivByZeroError> {
         let temp = self.map_either(|r| (r / rhs.unwrap_left()), |r| (r / rhs.unwrap_right()));
 
         match temp {
@@ -483,7 +481,7 @@ impl BimapEitherOps for Either<Word, Tryte> {
         }
     }
 
-    fn bimap_mod(self, rhs: Self) -> Result<Either<Word, Tryte>, CpuError> {
+    fn bimap_mod(self, rhs: Self) -> Result<Either<Word, Tryte>, DivByZeroError> {
         let temp = self.map_either(|r| (r % rhs.unwrap_left()), |r| (r % rhs.unwrap_right()));
 
         match temp {
@@ -502,7 +500,7 @@ impl BimapEitherOps for Either<Word, Tryte> {
 
 #[cfg(test)]
 pub mod test {
-    use crate::{trits::Trit, tryte::Tryte, word::Word};
+    use ternary::{trits::Trit, tryte::Tryte, word::Word};
     use itertools::Either::{Left, Right};
 
     use super::{Register, RegisterFile};

@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use crate::{trits::Trit, tryte::Tryte, word::Word};
+use ternary::{trits::Trit, tryte::Tryte, word::Word};
 
 /// Status Word:
 /// [C, S, P, I, R, _, _, _, _,

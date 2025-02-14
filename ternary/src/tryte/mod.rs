@@ -1,13 +1,13 @@
 use std::ops::{Deref, DerefMut};
 
-use crate::{trits::*, word::Word, GetStatus};
+use crate::{trits::*, word::Word};
 
 pub mod binops;
 pub mod tritops;
 pub mod unops;
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
-pub struct Tryte(pub(crate) [Trit; 9]);
+pub struct Tryte(pub [Trit; 9]);
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct TryteAddResult {
@@ -24,21 +24,6 @@ impl Tryte {
         } else {
             value
         }
-    }
-}
-
-impl GetStatus for Tryte {
-    fn get_sign(&self) -> Trit {
-        for i in (0..self.len()).rev() {
-            if self[i] != Trit::Zero {
-                return self[i];
-            }
-        }
-        Trit::Zero
-    }
-
-    fn get_parity(&self) -> Trit {
-        self[0]
     }
 }
 

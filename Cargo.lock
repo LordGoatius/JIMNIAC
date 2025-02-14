@@ -22,4 +22,17 @@ name = "jt1701"
 version = "0.2.0"
 dependencies = [
  "itertools",
+ "septivigntimal",
+ "ternary",
 ]
+
+[[package]]
+name = "septivigntimal"
+version = "0.1.0"
+dependencies = [
+ "ternary",
+]
+
+[[package]]
+name = "ternary"
+version = "0.1.0"

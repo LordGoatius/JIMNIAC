@@ -1,6 +1,6 @@
 use std::{hash::Hash, ops::{Deref, DerefMut}};
 
-use crate::{trits::*, tryte::Tryte, GetStatus};
+use crate::{trits::*, tryte::Tryte};
 
 pub mod binops;
 pub mod unops;
@@ -8,12 +8,12 @@ pub mod tritops;
 pub mod consts;
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
-pub struct Word(pub(crate) [Trit; 27]);
+pub struct Word(pub [Trit; 27]);
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct WordAddResult {
-    pub(crate) carry: Trit,
-    pub(crate) result: Word,
+    pub carry: Trit,
+    pub result: Word,
 }
 
 //=== Impl Word ===//
@@ -27,33 +27,18 @@ impl Word {
         }
     }
 
-    pub(crate) fn lowest_tryte(&self) -> Tryte {
+    pub fn lowest_tryte(&self) -> Tryte {
         let [ret, _, _] = (*self).into();
         ret
     }
 
-    pub(crate) fn zero_lowest_tryte(&self) -> Word {
+    pub fn zero_lowest_tryte(&self) -> Word {
         let [_, mid, high]: [Tryte; 3] = (*self).into();
         [[Trit::Zero; 9].into(), mid, high].into()
     }
 
-    pub(crate) fn set_tryte(&mut self, tryte: Tryte) {
+    pub fn set_tryte(&mut self, tryte: Tryte) {
         *self = [tryte, Tryte::default(), Tryte::default()].into();
-    }
-}
-
-impl GetStatus for Word {
-    fn get_sign(&self) -> Trit {
-        for i in (0..self.len()).rev() {
-            if self[i] != Trit::Zero {
-                return self[i];
-            }
-        }
-        Trit::Zero
-    }
-
-    fn get_parity(&self) -> Trit {
-        self[0]
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::cpu::errors::CpuError;
+use crate::errors::DivByZeroError;
 
 use super::*;
 use std::ops::{Add, Div, Mul, Rem, Sub};
@@ -134,7 +134,7 @@ impl Mul<&Trit> for Word {
 }
 
 impl Div for Word {
-    type Output = Result<Word, CpuError>;
+    type Output = Result<Word, DivByZeroError>;
 
     fn div(self, rhs: Self) -> Self::Output {
         self.euclidean_division(rhs).map(|res| res.quotient)
@@ -142,16 +142,16 @@ impl Div for Word {
 }
 
 impl Rem for Word {
-    type Output = Result<Word, CpuError>;
+    type Output = Result<Word, DivByZeroError>;
     fn rem(self, rhs: Self) -> Self::Output {
         self.euclidean_division(rhs).map(|res| res.remainder)
     }
 }
 
 impl Word {
-    fn euclidean_division(self, rhs: Self) -> Result<EuclideanDivisionResult, CpuError> {
+    fn euclidean_division(self, rhs: Self) -> Result<EuclideanDivisionResult, DivByZeroError> {
         if rhs == Word::default() {
-            return Err(CpuError::DivByZero);
+            return Err(DivByZeroError);
         }
 
         let len = self.len();

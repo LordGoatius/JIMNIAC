@@ -1,6 +1,7 @@
 use std::isize;
 
-use crate::{stack::Chunk, trits::Trit, tryte::Tryte, word::Word};
+use crate::stack::Chunk;
+use ternary::{trits::Trit, tryte::Tryte, word::Word};
 
 use super::{Stack, HALF_PAGE_SIZE};
 
@@ -84,8 +85,8 @@ impl Stack {
 
 #[cfg(test)]
 pub mod test {
-    use crate::{
-        stack::{Stack, HALF_PAGE_SIZE, PAGE_SIZE},
+    use crate::stack::{Stack, HALF_PAGE_SIZE, PAGE_SIZE};
+    use ternary::{
         trits::Trit,
         tryte::Tryte, word::Word,
     };
