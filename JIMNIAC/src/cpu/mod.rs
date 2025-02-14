@@ -27,10 +27,10 @@ use itertools::{
 
 pub mod errors;
 pub mod fedeex;
-pub mod jt1701isa;
 pub mod macros;
 pub mod consts;
 pub mod ports;
+pub mod jt1701isa;
 pub mod registers;
 pub mod statusword;
 
@@ -48,6 +48,14 @@ pub struct Cpu {
     // TODO
     ports: Ports,
 }
+
+// impl Default for Cpu {
+//     fn default() -> Self {
+//         Cpu {
+//             ..Default::default()
+//         }
+//     }
+// }
 
 impl Cpu {
     fn copy_program_to_stack(&mut self, begin: Word, program: Vec<Tryte>) {
