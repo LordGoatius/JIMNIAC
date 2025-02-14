@@ -1,8 +1,30 @@
-# Overview
-<<<<<<< HEAD
-In this project I made a Harvard architecture virtual machine which operated on balanced ternary machine code.
+# Overview:
+The docs for the current iteration of this project are in progress. It is much more advanced than the previous attempt, so it will take more time.
 
-`git checkout v2` to checkout my progress on my much more advanced von Neumann architecture machine.
+Ops:
+```
+  CPU | STR    | LD     | MOV   | ALU  | TRIT | STACK | BRANCH | IO
+____________________________________________________________________
+ lit  | ldri   | stri   | movri | add  | not  | pushr |  cmp   | inr
+ hlt  | ldrr   | strr   | movrr | mul  | lsh  | pushi |  spt   | outr
+ int  | ldrri  | strri  |       | sub  | rsh  | popr  |  sst   | outi
+ nop  | ldrpci | strpci |       | eqot | and  | popi  |  br    |
+ wfi  |        |        |       | erem | or   |       |  bne   |
+ sti  |        |        |       |      | rot  |       |  bgt   |
+ bti  |        |        |       |      |      |       |  blt   |
+ rti  |        |        |       |      |      |       |  beq   |
+      |        |        |       |      |      |       |  bgeq  |
+      |        |        |       |      |      |       |  bleq  |
+      |        |        |       |      |      |       |  bofn  |
+      |        |        |       |      |      |       |  bofz  |
+      |        |        |       |      |      |       |  bofp  |
+      |        |        |       |      |      |       |  bpn   |
+      |        |        |       |      |      |       |  bpz   |
+      |        |        |       |      |      |       |  bpp   |
+```
+
+## Previous Version
+In a previous version of this project I made a Harvard architecture virtual machine which operated on balanced ternary machine code.
 
 # Operations
 ```
@@ -53,4 +75,3 @@ This repository contains all of my work on my von Neumann architecture ternary v
 
 A guide for the machine code/assmebly is not provided yet. It's slightly too big to be included in a README file.
 It will be provided once the assembler is done.
->>>>>>> v2
