@@ -9,7 +9,7 @@ ____________________________________________________________________
  hlt  | ldrr   | strr   | movrr | mul  | lsh  | pushi |  spt   | outr
  int  | ldrri  | strri  |       | sub  | rsh  | popr  |  sst   | outi
  nop  | ldrpci | strpci |       | eqot | and  | popi  |  br    |
- wfi  |        |        |       | erem | or   |       |  bne   |
+ wfi   |        |        |       | erem | or   |       |  bne   |
  sti  |        |        |       |      | rot  |       |  bgt   |
  bti  |        |        |       |      |      |       |  blt   |
  rti  |        |        |       |      |      |       |  beq   |
