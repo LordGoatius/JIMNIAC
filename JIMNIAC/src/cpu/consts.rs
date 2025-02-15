@@ -1,219 +1,219 @@
 use super::registers::{Register, RegisterNumber, WordOrTryte};
 
-pub const RN13_WORD: Register = Register {
+pub const RN13: Register = Register {
     num: RegisterNumber::RN13,
     size: WordOrTryte::Word,
 };
-pub const RN12_WORD: Register = Register {
+pub const RN12: Register = Register {
     num: RegisterNumber::RN12,
     size: WordOrTryte::Word,
 };
-pub const RN11_WORD: Register = Register {
+pub const RN11: Register = Register {
     num: RegisterNumber::RN11,
     size: WordOrTryte::Word,
 };
-pub const RN10_WORD: Register = Register {
+pub const RN10: Register = Register {
     num: RegisterNumber::RN10,
     size: WordOrTryte::Word,
 };
-pub const RN9_WORD: Register = Register {
+pub const RN9: Register = Register {
     num: RegisterNumber::RN9,
     size: WordOrTryte::Word,
 };
-pub const RN8_WORD: Register = Register {
+pub const RN8: Register = Register {
     num: RegisterNumber::RN8,
     size: WordOrTryte::Word,
 };
-pub const RN7_WORD: Register = Register {
+pub const RN7: Register = Register {
     num: RegisterNumber::RN7,
     size: WordOrTryte::Word,
 };
-pub const RN6_WORD: Register = Register {
+pub const RN6: Register = Register {
     num: RegisterNumber::RN6,
     size: WordOrTryte::Word,
 };
-pub const RN5_WORD: Register = Register {
+pub const RN5: Register = Register {
     num: RegisterNumber::RN5,
     size: WordOrTryte::Word,
 };
-pub const RN4_WORD: Register = Register {
+pub const RN4: Register = Register {
     num: RegisterNumber::RN4,
     size: WordOrTryte::Word,
 };
-pub const RN3_WORD: Register = Register {
+pub const RN3: Register = Register {
     num: RegisterNumber::RN3,
     size: WordOrTryte::Word,
 };
-pub const RN2_WORD: Register = Register {
+pub const RN2: Register = Register {
     num: RegisterNumber::RN2,
     size: WordOrTryte::Word,
 };
-pub const RN1_WORD: Register = Register {
+pub const RN1: Register = Register {
     num: RegisterNumber::RN1,
     size: WordOrTryte::Word,
 };
-pub const R0_WORD: Register = Register {
+pub const R0: Register = Register {
     num: RegisterNumber::R0,
     size: WordOrTryte::Word,
 };
-pub const R1_WORD: Register = Register {
+pub const R1: Register = Register {
     num: RegisterNumber::R1,
     size: WordOrTryte::Word,
 };
-pub const R2_WORD: Register = Register {
+pub const R2: Register = Register {
     num: RegisterNumber::R2,
     size: WordOrTryte::Word,
 };
-pub const R3_WORD: Register = Register {
+pub const R3: Register = Register {
     num: RegisterNumber::R3,
     size: WordOrTryte::Word,
 };
-pub const R4_WORD: Register = Register {
+pub const R4: Register = Register {
     num: RegisterNumber::R4,
     size: WordOrTryte::Word,
 };
-pub const R5_WORD: Register = Register {
+pub const R5: Register = Register {
     num: RegisterNumber::R5,
     size: WordOrTryte::Word,
 };
-pub const R6_WORD: Register = Register {
+pub const R6: Register = Register {
     num: RegisterNumber::R6,
     size: WordOrTryte::Word,
 };
-pub const R7_WORD: Register = Register {
+pub const R7: Register = Register {
     num: RegisterNumber::R7,
     size: WordOrTryte::Word,
 };
-pub const R8_WORD: Register = Register {
+pub const R8: Register = Register {
     num: RegisterNumber::R8,
     size: WordOrTryte::Word,
 };
-pub const R9_WORD: Register = Register {
+pub const R9: Register = Register {
     num: RegisterNumber::R9,
     size: WordOrTryte::Word,
 };
-pub const R10_WORD: Register = Register {
+pub const R10: Register = Register {
     num: RegisterNumber::R10,
     size: WordOrTryte::Word,
 };
-pub const R11_WORD: Register = Register {
+pub const R11: Register = Register {
     num: RegisterNumber::R11,
     size: WordOrTryte::Word,
 };
-pub const R12_WORD: Register = Register {
+pub const R12: Register = Register {
     num: RegisterNumber::R12,
     size: WordOrTryte::Word,
 };
-pub const R13_WORD: Register = Register {
+pub const R13: Register = Register {
     num: RegisterNumber::R13,
     size: WordOrTryte::Word,
 };
 
-pub const RN13_TRYTE: Register = Register {
+pub const TN13: Register = Register {
     num: RegisterNumber::RN13,
     size: WordOrTryte::Tryte,
 };
-pub const RN12_TRYTE: Register = Register {
+pub const TN12: Register = Register {
     num: RegisterNumber::RN12,
     size: WordOrTryte::Tryte,
 };
-pub const RN11_TRYTE: Register = Register {
+pub const TN11: Register = Register {
     num: RegisterNumber::RN11,
     size: WordOrTryte::Tryte,
 };
-pub const RN10_TRYTE: Register = Register {
+pub const TN10: Register = Register {
     num: RegisterNumber::RN10,
     size: WordOrTryte::Tryte,
 };
-pub const RN9_TRYTE: Register = Register {
+pub const TN9: Register = Register {
     num: RegisterNumber::RN9,
     size: WordOrTryte::Tryte,
 };
-pub const RN8_TRYTE: Register = Register {
+pub const TN8: Register = Register {
     num: RegisterNumber::RN8,
     size: WordOrTryte::Tryte,
 };
-pub const RN7_TRYTE: Register = Register {
+pub const TN7: Register = Register {
     num: RegisterNumber::RN7,
     size: WordOrTryte::Tryte,
 };
-pub const RN6_TRYTE: Register = Register {
+pub const TN6: Register = Register {
     num: RegisterNumber::RN6,
     size: WordOrTryte::Tryte,
 };
-pub const RN5_TRYTE: Register = Register {
+pub const TN5: Register = Register {
     num: RegisterNumber::RN5,
     size: WordOrTryte::Tryte,
 };
-pub const RN4_TRYTE: Register = Register {
+pub const TN4: Register = Register {
     num: RegisterNumber::RN4,
     size: WordOrTryte::Tryte,
 };
-pub const RN3_TRYTE: Register = Register {
+pub const TN3: Register = Register {
     num: RegisterNumber::RN3,
     size: WordOrTryte::Tryte,
 };
-pub const RN2_TRYTE: Register = Register {
+pub const TN2: Register = Register {
     num: RegisterNumber::RN2,
     size: WordOrTryte::Tryte,
 };
-pub const RN1_TRYTE: Register = Register {
+pub const TN1: Register = Register {
     num: RegisterNumber::RN1,
     size: WordOrTryte::Tryte,
 };
-pub const R0_TRYTE: Register = Register {
+pub const T0: Register = Register {
     num: RegisterNumber::R0,
     size: WordOrTryte::Tryte,
 };
-pub const R1_TRYTE: Register = Register {
+pub const T1: Register = Register {
     num: RegisterNumber::R1,
     size: WordOrTryte::Tryte,
 };
-pub const R2_TRYTE: Register = Register {
+pub const T2: Register = Register {
     num: RegisterNumber::R2,
     size: WordOrTryte::Tryte,
 };
-pub const R3_TRYTE: Register = Register {
+pub const T3: Register = Register {
     num: RegisterNumber::R3,
     size: WordOrTryte::Tryte,
 };
-pub const R4_TRYTE: Register = Register {
+pub const T4: Register = Register {
     num: RegisterNumber::R4,
     size: WordOrTryte::Tryte,
 };
-pub const R5_TRYTE: Register = Register {
+pub const T5: Register = Register {
     num: RegisterNumber::R5,
     size: WordOrTryte::Tryte,
 };
-pub const R6_TRYTE: Register = Register {
+pub const T6: Register = Register {
     num: RegisterNumber::R6,
     size: WordOrTryte::Tryte,
 };
-pub const R7_TRYTE: Register = Register {
+pub const T7: Register = Register {
     num: RegisterNumber::R7,
     size: WordOrTryte::Tryte,
 };
-pub const R8_TRYTE: Register = Register {
+pub const T8: Register = Register {
     num: RegisterNumber::R8,
     size: WordOrTryte::Tryte,
 };
-pub const R9_TRYTE: Register = Register {
+pub const T9: Register = Register {
     num: RegisterNumber::R9,
     size: WordOrTryte::Tryte,
 };
-pub const R10_TRYTE: Register = Register {
+pub const T10: Register = Register {
     num: RegisterNumber::R10,
     size: WordOrTryte::Tryte,
 };
-pub const R11_TRYTE: Register = Register {
+pub const T11: Register = Register {
     num: RegisterNumber::R11,
     size: WordOrTryte::Tryte,
 };
-pub const R12_TRYTE: Register = Register {
+pub const T12: Register = Register {
     num: RegisterNumber::R12,
     size: WordOrTryte::Tryte,
 };
-pub const R13_TRYTE: Register = Register {
+pub const T13: Register = Register {
     num: RegisterNumber::R13,
     size: WordOrTryte::Tryte,
 };

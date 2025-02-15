@@ -1331,12 +1331,12 @@ pub mod test {
         let word: Word = [[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into();
         let tryte: Tryte = <Word as Into<[Tryte; 3]>>::into(word)[0];
         let mut cpu = Cpu::default();
-        // MOVRI(R12_WORD, word)
-        cpu.movri(R12_WORD, word);
-        // MOVRR(R11_WORD, R12_WORD)
-        cpu.movrr(R11_WORD, R12_WORD);
-        // LHT(R11_WORD)
-        cpu.lht(R11_WORD);
+        // MOVRI(R12, word)
+        cpu.movri(R12, word);
+        // MOVRR(R11, R12)
+        cpu.movrr(R11, R12);
+        // LHT(R11)
+        cpu.lht(R11);
         assert_eq!(cpu.cpu_state_reg.get_interrupt_vector(), tryte);
 
         // let instr = INT([[Trit::Zero, Trit::POne, Trit::NOne]; 3].into());
@@ -1346,111 +1346,111 @@ pub mod test {
         assert_eq!(cpu.cpu_state_reg.get_interrupt_enable(), Trit::POne);
         // let instr = RTI;
 
-        // STRI(R12_WORD, R11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into());
-        cpu.stri(R12_WORD, R11_WORD, tryte);
-        // LDRI(R12_WORD, R11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into());
-        cpu.ldri(R10_WORD, R11_WORD, tryte);
+        // STRI(R12, R11, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into());
+        cpu.stri(R12, R11, tryte);
+        // LDRI(R12, R11, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into());
+        cpu.ldri(R10, R11, tryte);
 
-        assert_eq!(cpu.register_file.get_word(R12_WORD), cpu.register_file.get_word(R10_WORD));
+        assert_eq!(cpu.register_file.get_word(R12), cpu.register_file.get_word(R10));
 
-        // STRR(R12_WORD, R11_WORD, R11_WORD);
-        cpu.strr(R12_WORD, R11_WORD, R11_WORD);
-        // LDRR(R9_WORD, R11_WORD, R11_WORD);
-        cpu.ldrr(R9_WORD, R11_WORD, R11_WORD);
+        // STRR(R12, R11, R11);
+        cpu.strr(R12, R11, R11);
+        // LDRR(R9, R11, R11);
+        cpu.ldrr(R9, R11, R11);
 
-        assert_eq!(cpu.register_file.get_word(R12_WORD), cpu.register_file.get_word(R9_WORD));
+        assert_eq!(cpu.register_file.get_word(R12), cpu.register_file.get_word(R9));
 
-        // STRRI(R9_WORD, R11_WORD, R11_WORDm tryte)
-        cpu.strri(R12_WORD, R11_WORD, R11_WORD, tryte);
-        // LDRRI(R9_WORD, R11_WORD, R11_WORDm tryte)
-        cpu.ldrri(R8_WORD, R11_WORD, R11_WORD, tryte);
+        // STRRI(R9, R11, R11m tryte)
+        cpu.strri(R12, R11, R11, tryte);
+        // LDRRI(R9, R11, R11m tryte)
+        cpu.ldrri(R8, R11, R11, tryte);
 
-        assert_eq!(cpu.register_file.get_word(R12_WORD), cpu.register_file.get_word(R8_WORD));
+        assert_eq!(cpu.register_file.get_word(R12), cpu.register_file.get_word(R8));
 
-        // STRPCI(R12_WORD, word);
-        cpu.strpci(R12_WORD, [[Trit::POne; 9].into(), Tryte::default(), Tryte::default()].into());
-        // LDRPCI(R7_WORD, word);
-        cpu.ldrpci(R7_WORD, [[Trit::POne; 9].into(), Tryte::default(), Tryte::default()].into());
-        assert_eq!(cpu.register_file.get_word(R12_WORD), cpu.register_file.get_word(R7_WORD));
+        // STRPCI(R12, word);
+        cpu.strpci(R12, [[Trit::POne; 9].into(), Tryte::default(), Tryte::default()].into());
+        // LDRPCI(R7, word);
+        cpu.ldrpci(R7, [[Trit::POne; 9].into(), Tryte::default(), Tryte::default()].into());
+        assert_eq!(cpu.register_file.get_word(R12), cpu.register_file.get_word(R7));
 
-        cpu.movrr(R13_WORD, R12_WORD);
-        cpu.owo(Tryte::default(), R6_WORD, R13_WORD);
-        assert_eq!(cpu.register_file.get_word(R6_WORD), cpu.register_file.get_word(R13_WORD) & [O, W, O, W, O, W, O, W, O].into());
+        cpu.movrr(R13, R12);
+        cpu.owo(Tryte::default(), R6, R13);
+        assert_eq!(cpu.register_file.get_word(R6), cpu.register_file.get_word(R13) & [O, W, O, W, O, W, O, W, O].into());
 
-        cpu.movrr(R13_WORD, R12_WORD);
-        cpu.uwu(Tryte::default(), R6_WORD, R13_WORD);
-        assert_eq!(cpu.register_file.get_word(R6_WORD), cpu.register_file.get_word(R13_WORD) & [U, W, U, W, U, W, U, W, U].into());
+        cpu.movrr(R13, R12);
+        cpu.uwu(Tryte::default(), R6, R13);
+        assert_eq!(cpu.register_file.get_word(R6), cpu.register_file.get_word(R13) & [U, W, U, W, U, W, U, W, U].into());
 
-        cpu.eqot(R5_WORD, tryte, R12_WORD, R11_WORD);
-        assert_eq!(cpu.register_file.get_word(R5_WORD), (cpu.register_file.get_word(R12_WORD) / (<Tryte as Into<Word>>::into(tryte) + cpu.register_file.get_word(R11_WORD)).result).unwrap());
+        cpu.eqot(R5, tryte, R12, R11);
+        assert_eq!(cpu.register_file.get_word(R5), (cpu.register_file.get_word(R12) / (<Tryte as Into<Word>>::into(tryte) + cpu.register_file.get_word(R11)).result).unwrap());
 
-        cpu.erem(R5_WORD, tryte, R12_WORD, R11_WORD);
-        assert_eq!(cpu.register_file.get_word(R5_WORD), (cpu.register_file.get_word(R12_WORD) % (<Tryte as Into<Word>>::into(tryte) + cpu.register_file.get_word(R11_WORD)).result).unwrap());
+        cpu.erem(R5, tryte, R12, R11);
+        assert_eq!(cpu.register_file.get_word(R5), (cpu.register_file.get_word(R12) % (<Tryte as Into<Word>>::into(tryte) + cpu.register_file.get_word(R11)).result).unwrap());
 
-        // MOVRI(R12_WORD, word)
-        cpu.movri(R12_WORD, word);
-        // MOVRR(R11_WORD, R12_WORD)
-        cpu.movrr(R11_WORD, R12_WORD);
+        // MOVRI(R12, word)
+        cpu.movri(R12, word);
+        // MOVRR(R11, R12)
+        cpu.movrr(R11, R12);
 
-        cpu.not(RN12_WORD, RN11_WORD);
-        assert_eq!(cpu.register_file.get_word(RN12_WORD), !cpu.register_file.get_word(RN11_WORD));
+        cpu.not(RN12, RN11);
+        assert_eq!(cpu.register_file.get_word(RN12), !cpu.register_file.get_word(RN11));
 
-        cpu.lsh(RN12_WORD, RN11_WORD, THREE_TRYTE);
-        assert_eq!(cpu.register_file.get_word(RN12_WORD), cpu.register_file.get_word(RN11_WORD) << 3);
+        cpu.lsh(RN12, RN11, THREE_TRYTE);
+        assert_eq!(cpu.register_file.get_word(RN12), cpu.register_file.get_word(RN11) << 3);
 
-        cpu.rsh(RN12_WORD, RN11_WORD, THREE_TRYTE);
-        assert_eq!(cpu.register_file.get_word(RN12_WORD), cpu.register_file.get_word(RN11_WORD) >> 3);
+        cpu.rsh(RN12, RN11, THREE_TRYTE);
+        assert_eq!(cpu.register_file.get_word(RN12), cpu.register_file.get_word(RN11) >> 3);
 
-        cpu.movri(RN13_WORD, word);
-        cpu.movri(RN12_WORD, word);
-        cpu.movri(RN11_WORD, word);
+        cpu.movri(RN13, word);
+        cpu.movri(RN12, word);
+        cpu.movri(RN11, word);
 
-        cpu.and_r(RN13_WORD, RN12_WORD, RN11_WORD);
-        assert_eq!(cpu.register_file.get_word(RN13_WORD), cpu.register_file.get_word(RN11_WORD) & cpu.register_file.get_word(RN11_WORD));
+        cpu.and_r(RN13, RN12, RN11);
+        assert_eq!(cpu.register_file.get_word(RN13), cpu.register_file.get_word(RN11) & cpu.register_file.get_word(RN11));
 
-        cpu.or_r(RN13_WORD, RN12_WORD, RN11_WORD);
-        assert_eq!(cpu.register_file.get_word(RN13_WORD), cpu.register_file.get_word(RN11_WORD) | cpu.register_file.get_word(RN11_WORD));
+        cpu.or_r(RN13, RN12, RN11);
+        assert_eq!(cpu.register_file.get_word(RN13), cpu.register_file.get_word(RN11) | cpu.register_file.get_word(RN11));
 
         // TODO
-        // ROTR(R12_WORD, RN11_WORD, RN11_WORD);
-        // ROTI(R12_WORD, RN11_WORD, [[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into());
+        // ROTR(R12, RN11, RN11);
+        // ROTI(R12, RN11, [[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into());
 
         cpu.movri(SP_WORD, word);
-        cpu.push_r3(RN12_WORD, RN11_WORD, RN13_WORD);
-        // PUSHR3(R12_WORD, RN11_WORD, RN13_WORD);
-        cpu.pop(RN1_WORD); 
-        assert_eq!(cpu.register_file.get_word(RN1_WORD), (cpu.register_file.get_word(RN12_WORD) + cpu.register_file.get_word(RN11_WORD)).result * cpu.register_file.get_word(RN13_WORD));
+        cpu.push_r3(RN12, RN11, RN13);
+        // PUSHR3(R12, RN11, RN13);
+        cpu.pop(RN1); 
+        assert_eq!(cpu.register_file.get_word(RN1), (cpu.register_file.get_word(RN12) + cpu.register_file.get_word(RN11)).result * cpu.register_file.get_word(RN13));
 
         cpu.push_im_tryte((tryte + Trit::POne).result);
-        cpu.pop(R1_TRYTE);
-        assert_eq!(cpu.register_file.get_tryte(R1_TRYTE), (tryte + Trit::POne).result);
+        cpu.pop(T1);
+        assert_eq!(cpu.register_file.get_tryte(T1), (tryte + Trit::POne).result);
 
         // *((r0 + r1) * (r2 + imm))
-        cpu.movri(R2_WORD, (word + Trit::POne).result);
-        cpu.strr(R2_WORD, R2_WORD, R2_WORD);
-        cpu.ldrr(R3_WORD, R2_WORD, R2_WORD);
-        cpu.push_mem(R2_WORD, R2_WORD, R0_WORD, ONE_TRYTE);
-        cpu.pop(R1_WORD);
-        assert_eq!(cpu.register_file.get_word(R1_WORD), cpu.register_file.get_word(R3_WORD));
+        cpu.movri(R2, (word + Trit::POne).result);
+        cpu.strr(R2, R2, R2);
+        cpu.ldrr(R3, R2, R2);
+        cpu.push_mem(R2, R2, R0, ONE_TRYTE);
+        cpu.pop(R1);
+        assert_eq!(cpu.register_file.get_word(R1), cpu.register_file.get_word(R3));
 
-        cpu.add(RN11_WORD, ONE_TRYTE, R0_WORD, R0_WORD);
-        cpu.br_r(R12_WORD, RN11_WORD, RN11_WORD);
-        let sum = (cpu.register_file.get_word(R12_WORD) + cpu.register_file.get_word(RN11_WORD)).result * cpu.register_file.get_word(RN11_WORD);
+        cpu.add(RN11, ONE_TRYTE, R0, R0);
+        cpu.br_r(R12, RN11, RN11);
+        let sum = (cpu.register_file.get_word(R12) + cpu.register_file.get_word(RN11)).result * cpu.register_file.get_word(RN11);
 
         assert_eq!(cpu.program_counter, sum);
 
-        cpu.add(RN11_WORD, ONE_TRYTE, R0_WORD, R0_WORD);
+        cpu.add(RN11, ONE_TRYTE, R0, R0);
         let tr: Tryte = [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into();
-        let addr = (cpu.register_file.get_word(R12_WORD) + cpu.register_file.get_word(RN11_WORD)).result * (cpu.register_file.get_word(RN11_WORD) + <Tryte as Into<Word>>::into(tr)).result;
-        cpu.movri(R5_WORD, addr);
-        cpu.stri(RN13_WORD, R5_WORD, Tryte::default());
+        let addr = (cpu.register_file.get_word(R12) + cpu.register_file.get_word(RN11)).result * (cpu.register_file.get_word(RN11) + <Tryte as Into<Word>>::into(tr)).result;
+        cpu.movri(R5, addr);
+        cpu.stri(RN13, R5, Tryte::default());
 
-        cpu.br_m(R12_WORD, RN11_WORD, RN11_WORD, tr);
+        cpu.br_m(R12, RN11, RN11, tr);
 
-        assert_eq!(cpu.program_counter, cpu.register_file.get_word(RN13_WORD));
+        assert_eq!(cpu.program_counter, cpu.register_file.get_word(RN13));
 
-        // let instr = INR(R12_WORD, RN11_WORD);
-        // let instr = OUTR(R12_WORD, RN11_WORD);
-        // let instr = OUTI(R12_WORD, [[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into());
+        // let instr = INR(R12, RN11);
+        // let instr = OUTR(R12, RN11);
+        // let instr = OUTI(R12, [[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into());
     }
 }

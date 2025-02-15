@@ -325,16 +325,16 @@ pub mod test {
         // 24 hlt
         let instrs = vec![
             // 1
-            MOVRI(RN11_TRYTE, [[Trit::POne, Trit::Zero, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            MOVRI(TN11, [[Trit::POne, Trit::Zero, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
             // 6
-            MOVRI(RN13_TRYTE, [[Trit::Zero, Trit::Zero, Trit::POne], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            MOVRI(TN13, [[Trit::Zero, Trit::Zero, Trit::POne], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
             // 1
-            MOVRI(RN12_TRYTE, [[Trit::POne, Trit::Zero, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
-            CMP(RN13_WORD, RN11_WORD),
+            MOVRI(TN12, [[Trit::POne, Trit::Zero, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
+            CMP(TN13, TN11),
             // 24
             BLEQI([[Trit::Zero, Trit::NOne, Trit::Zero], [Trit::POne, Trit::Zero, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
-            MUL(RN12_WORD, Tryte::default(), RN12_WORD, RN13_WORD),
-            ADD(RN13_WORD, [[Trit::NOne, Trit::Zero, Trit::Zero], ZERO, ZERO].into(), RN13_WORD, R0_WORD),
+            MUL(RN12, Tryte::default(), RN12, RN13),
+            ADD(RN13, [[Trit::NOne, Trit::Zero, Trit::Zero], ZERO, ZERO].into(), RN13, R0),
             BRI([[Trit::Zero, Trit::Zero, Trit::POne], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
             HLT
         ];
@@ -346,7 +346,7 @@ pub mod test {
         }
 
         cpu.fexecute();
-        let val: isize = cpu.register_file.get_word(RN12_WORD).into();
+        let val: isize = cpu.register_file.get_word(RN12).into();
         println!("{val:?}");
     }
 
@@ -368,12 +368,12 @@ pub mod test {
         let instrs = vec![
             PUSHIMWORD([[Trit::NOne, Trit::Zero, Trit::POne], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
             PUSHIMWORD([[Trit::Zero, Trit::Zero, Trit::POne], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
-            POP(RN13_WORD),
-            POP(RN12_WORD),
-            ADD(RN11_WORD, Tryte::default(), RN12_WORD, RN13_WORD),
+            POP(RN13),
+            POP(RN12),
+            ADD(RN11, Tryte::default(), RN12, RN13),
             PUSHIMWORD([[Trit::NOne, Trit::NOne, Trit::POne], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
-            POP(RN10_WORD),
-            MUL(RN9_WORD, Tryte::default(), RN10_WORD, RN11_WORD),
+            POP(RN10),
+            MUL(RN9, Tryte::default(), RN10, RN11),
             HLT
         ];
 
@@ -386,7 +386,7 @@ pub mod test {
         }
 
         cpu.fexecute();
-        for (i, reg) in [RN13_WORD, RN12_WORD, RN11_WORD, RN10_WORD, RN9_WORD].into_iter().enumerate() {
+        for (i, reg) in [RN13, RN12, RN11, RN10, RN9].into_iter().enumerate() {
             let val: isize = cpu.register_file.get_word(reg).into();
             println!("result: {val:?}");
         }
