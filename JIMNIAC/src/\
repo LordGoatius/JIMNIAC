@@ -1417,7 +1417,7 @@ pub mod test {
         cpu.push_r3(RN12, RN11, RN13);
         // PUSHR3(R12, RN11, RN13);
         cpu.pop(RN1); 
-        assert_eq!(cpu.register_file.get_word(RN1), ((cpu.register_file.get_word(RN11) * cpu.register_file.get_word(RN13)) + cpu.register_file.get_word(RN12)).result);
+        assert_eq!(cpu.register_file.get_word(RN1), ((cpu.register_file.get_word(RN11) * cpu.register_file.get_word(RN13)).result + cpu.register_file.get_word(RN12)).result);
 
         cpu.push_im_tryte((tryte + Trit::POne).result);
         cpu.pop(T1);

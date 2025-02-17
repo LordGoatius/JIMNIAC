@@ -84,6 +84,25 @@ impl From<Tryte> for isize {
     }
 }
 
+// THIS IS TERRIBLE DO NOT READ PLEASE DON'T JUDGE ME FOR THIS
+// I DESERVE JUDGEMENT ON MY MERITS NOT MY TERRIBLE LAZY WORKAROUNDS
+// I'M SURE THE SOLUTION IS OBVIOUS USING MODULAR ARITHMETIC BUT
+// CONSIDER, I NEED TO TEST MY PROGRAM RN NOT DEVISE MY OWN ALGORITHM
+impl From<isize> for Tryte {
+    fn from(value: isize) -> Self {
+        let mut val = Tryte::default();
+        if value == 0 {
+            return val;
+        }
+        let sign = if value > 0 { Trit::POne } else { Trit::NOne };
+        while value != val.into() {
+            val = (val + sign).result;
+        }
+
+        val
+    }
+}
+
 impl From<Tryte> for Word {
     fn from(value: Tryte) -> Self {
         [value, Tryte::default(), Tryte::default()].into()
@@ -111,6 +130,12 @@ pub mod test {
     use crate::tryte::TryteAddResult;
 
     use super::{Trit, Tryte};
+
+    #[test]
+    fn test_from_isize() {
+        let tryte: Tryte = [Trit::NOne, Trit::POne, Trit::POne, Trit::Zero, Trit::Zero, Trit::Zero, Trit::Zero, Trit::Zero, Trit::Zero].into();
+        assert_eq!(11isize, tryte.into());
+    }
 
     #[test]
     fn iter_tribble() {

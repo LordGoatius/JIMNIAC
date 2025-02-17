@@ -306,7 +306,7 @@ impl Cpu {
 
 #[cfg(test)]
 pub mod test {
-    use crate::{cpu::{consts::*, jt1701isa::{self, jt1701, Instruction}, registers::SP_WORD, Cpu}, septivigntimal::*};
+    use crate::{cpu::{consts::*, jt1701isa::{self, jt1701, Instruction}, registers::{BP_WORD, SP_WORD}, Cpu}, septivigntimal::*};
     use ternary::{trits::Trit, tryte::Tryte, word::{consts::THREE_WORD, Word}};
 
     #[test]
@@ -390,5 +390,91 @@ pub mod test {
             let val: isize = cpu.register_file.get_word(reg).into();
             println!("result: {val:?}");
         }
+    }
+
+    #[test]
+    fn function_test() {
+        use super::Instruction::*;
+        let mut cpu = Cpu::default();
+        cpu.program_counter = Word::default();
+        // 0  mov %RN13, 6
+        //    ; (call fact)
+        // 3  push 60 ; push continue address to stack
+        // 6  b fact
+        //    ; fact(7)
+        //    ; // ARG: RN13
+        //    ; // RET: RN12
+        //    fact:
+        // 9      push %BP
+        // 12     mov  %BP, %SP
+        // 15     mov  %RN11, 2
+        // 18     cmp  %RN13, %RN11
+        // 21     bgti calcs
+        // 24     mov  %RN12, 2
+        // 27     b return
+        //    calcs:
+        //        ; move argument onto stack
+        // 30     push %RN13
+        //        ; subtract one from argument
+        // 33     sub  %RN13, 1
+        // 36     push 42 ; push continue address to stack
+        //        ; addr will be popped off by return
+        //        ; call again
+        // 39     b fact ; (call fact)
+        //        ; value will be in %RN12
+        // 42     pop %RN10
+        //        ; multiply return value with value on the stack
+        // 45     mul %RN12, %RN12, %RN10
+        //    return:
+        // 48     pop  %BP
+        //        ; pop return address into %RN10
+        // 51     pop  %RN10
+        // 54     mov  %R4, 1
+        // 57     b %RN10 ; * R4
+        //
+        // 60 hlt
+        let instrs = vec![
+            MOVRI(RN13, 6.into()),
+            PUSHIMWORD(60.into()),
+            BRI(9.into()),
+            PUSHR3(BP_WORD, R0, R0),
+            MOVRR(BP_WORD, SP_WORD),
+            MOVRI(RN11, 2.into()),
+            CMP(RN13, RN11),
+            // We want it to branch if we still need to recursively call
+            // We were BGEQ with 2, which was bad because that does an extra multiply by 2
+            BGTI(30.into()),
+            MOVRI(RN12, 2.into()),
+            BRI(48.into()),
+            PUSHR3(RN13, R0, R0),
+            SUB(RN13, (1).into(), RN13, R0),
+            PUSHIMWORD(42.into()),
+            BRI(9.into()),
+            POP(RN10),
+            MUL(RN12, 0.into(), RN12, RN10),
+            POP(BP_WORD),
+            POP(RN10),
+            // (r0 + r1) * r2
+            MOVRI(R4, 1.into()),
+            BRR(RN10, R0, R4),
+            HLT
+        ];
+
+
+        cpu.register_file.set_value(SP_WORD, [Trit::NOne; 27].into());
+
+        let mut loc = cpu.program_counter;
+        for i in &instrs {
+            cpu.stack.insert_word(loc, (*i).into());
+            loc = (loc + THREE_WORD).result;
+        }
+
+        cpu.fexecute();
+        assert_eq!(6isize*5*4*3*2*1, cpu.register_file.get_word(RN12).into());
+        for (i, reg) in [RN13, RN12, RN11, RN10, RN9].into_iter().enumerate() {
+            let val: isize = cpu.register_file.get_word(reg).into();
+            println!("result: {val:?}");
+        }
+
     }
 }

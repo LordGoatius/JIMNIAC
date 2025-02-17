@@ -102,6 +102,25 @@ impl From<Word> for isize {
     }
 }
 
+// THIS IS TERRIBLE DO NOT READ PLEASE DON'T JUDGE ME FOR THIS
+// I DESERVE JUDGEMENT ON MY MERITS NOT MY TERRIBLE LAZY WORKAROUNDS
+// I'M SURE THE SOLUTION IS OBVIOUS USING MODULAR ARITHMETIC BUT
+// CONSIDER, I NEED TO TEST MY PROGRAM RN NOT DEVISE MY OWN ALGORITHM
+impl From<isize> for Word {
+    fn from(value: isize) -> Self {
+        let mut val = Word::default();
+        if value == 0 {
+            return val;
+        }
+        let sign = if value > 0 { Trit::POne } else { Trit::NOne };
+        while value != val.into() {
+            val = (val + sign).result;
+        }
+
+        val
+    }
+}
+
 impl PartialOrd for Word {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
