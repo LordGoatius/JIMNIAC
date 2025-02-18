@@ -4,7 +4,13 @@ use std::{
 };
 
 use crate::GetStatus;
-use ternary::{errors::DivByZeroError, trits::Trit, tryte::{Tryte, TryteAddResult}, word::{Word, WordAddResult}};
+use septivigntimal::*;
+use ternary::{
+    errors::DivByZeroError,
+    trits::Trit,
+    tryte::{Tryte, TryteAddResult},
+    word::{Word, WordAddResult},
+};
 
 use itertools::{
     Either,
@@ -78,7 +84,6 @@ pub const SP_TRYTE: Register = Register {
     size: WordOrTryte::Tryte,
 };
 
-
 impl From<Register> for Trit {
     fn from(value: Register) -> Self {
         match value.size {
@@ -91,35 +96,35 @@ impl From<Register> for Trit {
 impl From<Register> for [Trit; 3] {
     fn from(value: Register) -> Self {
         match value.num {
-            RegisterNumber::RN13 => [Trit::NOne, Trit::NOne, Trit::NOne],
-            RegisterNumber::RN12 => [Trit::NOne, Trit::NOne, Trit::Zero],
-            RegisterNumber::RN11 => [Trit::NOne, Trit::NOne, Trit::POne],
-            RegisterNumber::RN10 => [Trit::NOne, Trit::Zero, Trit::NOne],
-            RegisterNumber::RN9 => [Trit::NOne, Trit::Zero, Trit::Zero],
-            RegisterNumber::RN8 => [Trit::NOne, Trit::Zero, Trit::POne],
-            RegisterNumber::RN7 => [Trit::NOne, Trit::POne, Trit::NOne],
-            RegisterNumber::RN6 => [Trit::NOne, Trit::POne, Trit::Zero],
-            RegisterNumber::RN5 => [Trit::NOne, Trit::POne, Trit::POne],
-            RegisterNumber::RN4 => [Trit::Zero, Trit::NOne, Trit::NOne],
-            RegisterNumber::RN3 => [Trit::Zero, Trit::NOne, Trit::Zero],
-            RegisterNumber::RN2 => [Trit::Zero, Trit::NOne, Trit::POne],
-            RegisterNumber::RN1 => [Trit::Zero, Trit::Zero, Trit::NOne],
-            RegisterNumber::R0 => [Trit::Zero, Trit::Zero, Trit::Zero],
-            RegisterNumber::R1 => [Trit::Zero, Trit::Zero, Trit::POne],
-            RegisterNumber::R2 => [Trit::Zero, Trit::POne, Trit::NOne],
-            RegisterNumber::R3 => [Trit::Zero, Trit::POne, Trit::Zero],
-            RegisterNumber::R4 => [Trit::Zero, Trit::POne, Trit::POne],
-            RegisterNumber::R5 => [Trit::POne, Trit::NOne, Trit::NOne],
-            RegisterNumber::R6 => [Trit::POne, Trit::NOne, Trit::Zero],
-            RegisterNumber::R7 => [Trit::POne, Trit::NOne, Trit::POne],
-            RegisterNumber::R8 => [Trit::POne, Trit::Zero, Trit::NOne],
-            RegisterNumber::R9 => [Trit::POne, Trit::Zero, Trit::Zero],
-            RegisterNumber::R10 => [Trit::POne, Trit::Zero, Trit::POne],
-            RegisterNumber::R11 => [Trit::POne, Trit::POne, Trit::NOne],
-            RegisterNumber::R12 => [Trit::POne, Trit::POne, Trit::Zero],
-            RegisterNumber::R13 => [Trit::POne, Trit::POne, Trit::POne],
-            RegisterNumber::SP => [Trit::POne, Trit::POne, Trit::Zero],
-            RegisterNumber::BP => [Trit::POne, Trit::POne, Trit::POne],
+            RegisterNumber::RN13 => Z,
+            RegisterNumber::RN12 => Y,
+            RegisterNumber::RN11 => X,
+            RegisterNumber::RN10 => W,
+            RegisterNumber::RN9 => V,
+            RegisterNumber::RN8 => U,
+            RegisterNumber::RN7 => T,
+            RegisterNumber::RN6 => S,
+            RegisterNumber::RN5 => R,
+            RegisterNumber::RN4 => Q,
+            RegisterNumber::RN3 => P,
+            RegisterNumber::RN2 => O,
+            RegisterNumber::RN1 => N,
+            RegisterNumber::R0 => ZERO,
+            RegisterNumber::R1 => A,
+            RegisterNumber::R2 => B,
+            RegisterNumber::R3 => C,
+            RegisterNumber::R4 => D,
+            RegisterNumber::R5 => E,
+            RegisterNumber::R6 => F,
+            RegisterNumber::R7 => G,
+            RegisterNumber::R8 => H,
+            RegisterNumber::R9 => I,
+            RegisterNumber::R10 => J,
+            RegisterNumber::R11 => K,
+            RegisterNumber::R12 => L,
+            RegisterNumber::R13 => M,
+            RegisterNumber::SP => L,
+            RegisterNumber::BP => M,
         }
     }
 }
@@ -132,35 +137,35 @@ impl From<Register> for (Trit, [Trit; 3]) {
         };
 
         let arr = match value.num {
-            RegisterNumber::RN13 => [Trit::NOne, Trit::NOne, Trit::NOne],
-            RegisterNumber::RN12 => [Trit::NOne, Trit::NOne, Trit::Zero],
-            RegisterNumber::RN11 => [Trit::NOne, Trit::NOne, Trit::POne],
-            RegisterNumber::RN10 => [Trit::NOne, Trit::Zero, Trit::NOne],
-            RegisterNumber::RN9 => [Trit::NOne, Trit::Zero, Trit::Zero],
-            RegisterNumber::RN8 => [Trit::NOne, Trit::Zero, Trit::POne],
-            RegisterNumber::RN7 => [Trit::NOne, Trit::POne, Trit::NOne],
-            RegisterNumber::RN6 => [Trit::NOne, Trit::POne, Trit::Zero],
-            RegisterNumber::RN5 => [Trit::NOne, Trit::POne, Trit::POne],
-            RegisterNumber::RN4 => [Trit::Zero, Trit::NOne, Trit::NOne],
-            RegisterNumber::RN3 => [Trit::Zero, Trit::NOne, Trit::Zero],
-            RegisterNumber::RN2 => [Trit::Zero, Trit::NOne, Trit::POne],
-            RegisterNumber::RN1 => [Trit::Zero, Trit::Zero, Trit::NOne],
-            RegisterNumber::R0 => [Trit::Zero, Trit::Zero, Trit::Zero],
-            RegisterNumber::R1 => [Trit::Zero, Trit::Zero, Trit::POne],
-            RegisterNumber::R2 => [Trit::Zero, Trit::POne, Trit::NOne],
-            RegisterNumber::R3 => [Trit::Zero, Trit::POne, Trit::Zero],
-            RegisterNumber::R4 => [Trit::Zero, Trit::POne, Trit::POne],
-            RegisterNumber::R5 => [Trit::POne, Trit::NOne, Trit::NOne],
-            RegisterNumber::R6 => [Trit::POne, Trit::NOne, Trit::Zero],
-            RegisterNumber::R7 => [Trit::POne, Trit::NOne, Trit::POne],
-            RegisterNumber::R8 => [Trit::POne, Trit::Zero, Trit::NOne],
-            RegisterNumber::R9 => [Trit::POne, Trit::Zero, Trit::Zero],
-            RegisterNumber::R10 => [Trit::POne, Trit::Zero, Trit::POne],
-            RegisterNumber::R11 => [Trit::POne, Trit::POne, Trit::NOne],
-            RegisterNumber::R12 => [Trit::POne, Trit::POne, Trit::Zero],
-            RegisterNumber::R13 => [Trit::POne, Trit::POne, Trit::POne],
-            RegisterNumber::SP => [Trit::POne, Trit::POne, Trit::Zero],
-            RegisterNumber::BP => [Trit::POne, Trit::POne, Trit::POne],
+            RegisterNumber::RN13 => Z,
+            RegisterNumber::RN12 => Y,
+            RegisterNumber::RN11 => X,
+            RegisterNumber::RN10 => W,
+            RegisterNumber::RN9 => V,
+            RegisterNumber::RN8 => U,
+            RegisterNumber::RN7 => T,
+            RegisterNumber::RN6 => S,
+            RegisterNumber::RN5 => R,
+            RegisterNumber::RN4 => Q,
+            RegisterNumber::RN3 => P,
+            RegisterNumber::RN2 => O,
+            RegisterNumber::RN1 => N,
+            RegisterNumber::R0 => ZERO,
+            RegisterNumber::R1 => A,
+            RegisterNumber::R2 => B,
+            RegisterNumber::R3 => C,
+            RegisterNumber::R4 => D,
+            RegisterNumber::R5 => E,
+            RegisterNumber::R6 => F,
+            RegisterNumber::R7 => G,
+            RegisterNumber::R8 => H,
+            RegisterNumber::R9 => I,
+            RegisterNumber::R10 => J,
+            RegisterNumber::R11 => K,
+            RegisterNumber::R12 => L,
+            RegisterNumber::R13 => M,
+            RegisterNumber::SP => L,
+            RegisterNumber::BP => M,
         };
 
         (trit, arr)
@@ -172,40 +177,40 @@ impl From<(Trit, [Trit; 3])> for Register {
     ///     NOne => Tryte
     ///     Zero => Word
     fn from(value: (Trit, [Trit; 3])) -> Self {
-            let size = match value.0 {
+        let size = match value.0 {
             Trit::NOne => WordOrTryte::Tryte,
             Trit::Zero => WordOrTryte::Word,
             _ => panic!(),
         };
 
         let num = match value.1 {
-            [Trit::NOne, Trit::NOne, Trit::NOne] => RegisterNumber::RN13,
-            [Trit::NOne, Trit::NOne, Trit::Zero] => RegisterNumber::RN12,
-            [Trit::NOne, Trit::NOne, Trit::POne] => RegisterNumber::RN11,
-            [Trit::NOne, Trit::Zero, Trit::NOne] => RegisterNumber::RN10,
-            [Trit::NOne, Trit::Zero, Trit::Zero] => RegisterNumber::RN9,
-            [Trit::NOne, Trit::Zero, Trit::POne] => RegisterNumber::RN8,
-            [Trit::NOne, Trit::POne, Trit::NOne] => RegisterNumber::RN7,
-            [Trit::NOne, Trit::POne, Trit::Zero] => RegisterNumber::RN6,
-            [Trit::NOne, Trit::POne, Trit::POne] => RegisterNumber::RN5,
-            [Trit::Zero, Trit::NOne, Trit::NOne] => RegisterNumber::RN4,
-            [Trit::Zero, Trit::NOne, Trit::Zero] => RegisterNumber::RN3,
-            [Trit::Zero, Trit::NOne, Trit::POne] => RegisterNumber::RN2,
-            [Trit::Zero, Trit::Zero, Trit::NOne] => RegisterNumber::RN1,
-            [Trit::Zero, Trit::Zero, Trit::Zero] => RegisterNumber::R0,
-            [Trit::Zero, Trit::Zero, Trit::POne] => RegisterNumber::R1,
-            [Trit::Zero, Trit::POne, Trit::NOne] => RegisterNumber::R2,
-            [Trit::Zero, Trit::POne, Trit::Zero] => RegisterNumber::R3,
-            [Trit::Zero, Trit::POne, Trit::POne] => RegisterNumber::R4,
-            [Trit::POne, Trit::NOne, Trit::NOne] => RegisterNumber::R5,
-            [Trit::POne, Trit::NOne, Trit::Zero] => RegisterNumber::R6,
-            [Trit::POne, Trit::NOne, Trit::POne] => RegisterNumber::R7,
-            [Trit::POne, Trit::Zero, Trit::NOne] => RegisterNumber::R8,
-            [Trit::POne, Trit::Zero, Trit::Zero] => RegisterNumber::R9,
-            [Trit::POne, Trit::Zero, Trit::POne] => RegisterNumber::R10,
-            [Trit::POne, Trit::POne, Trit::NOne] => RegisterNumber::R11,
-            [Trit::POne, Trit::POne, Trit::Zero] => RegisterNumber::R12,
-            [Trit::POne, Trit::POne, Trit::POne] => RegisterNumber::R13,
+            Z => RegisterNumber::RN13,
+            Y => RegisterNumber::RN12,
+            X => RegisterNumber::RN11,
+            W => RegisterNumber::RN10,
+            V => RegisterNumber::RN9,
+            U => RegisterNumber::RN8,
+            T => RegisterNumber::RN7,
+            S => RegisterNumber::RN6,
+            R => RegisterNumber::RN5,
+            Q => RegisterNumber::RN4,
+            P => RegisterNumber::RN3,
+            O => RegisterNumber::RN2,
+            N => RegisterNumber::RN1,
+            ZERO => RegisterNumber::R0,
+            A => RegisterNumber::R1,
+            B => RegisterNumber::R2,
+            C => RegisterNumber::R3,
+            D => RegisterNumber::R4,
+            E => RegisterNumber::R5,
+            F => RegisterNumber::R6,
+            G => RegisterNumber::R7,
+            H => RegisterNumber::R8,
+            I => RegisterNumber::R9,
+            J => RegisterNumber::R10,
+            K => RegisterNumber::R11,
+            L => RegisterNumber::R12,
+            M => RegisterNumber::R13,
         };
 
         Register { num, size }
@@ -341,7 +346,7 @@ impl RegisterFile {
         if reg.num == RegisterNumber::R0 {
             return;
         }
-        
+
         match reg.size {
             WordOrTryte::Word => match val {
                 Left(word) => {
@@ -414,7 +419,7 @@ impl GetStatus for Either<Word, Tryte> {
 
 pub struct EitherAddResult {
     pub result: Either<Word, Tryte>,
-    pub carry: Trit
+    pub carry: Trit,
 }
 
 pub trait MapResult {
@@ -429,8 +434,14 @@ impl MapResult for Either<WordAddResult, TryteAddResult> {
 
     fn bubbleres(self) -> EitherAddResult {
         match self {
-            Left(res) => EitherAddResult { result: Left(res.result), carry: res.carry },
-            Right(res) => EitherAddResult { result: Right(res.result), carry: res.carry },
+            Left(res) => EitherAddResult {
+                result: Left(res.result),
+                carry: res.carry,
+            },
+            Right(res) => EitherAddResult {
+                result: Right(res.result),
+                carry: res.carry,
+            },
         }
     }
 }
@@ -439,7 +450,7 @@ impl BimapEitherOps for Either<Word, Tryte> {
     fn as_word(self) -> Word {
         match self {
             Left(word) => word,
-            Right(tryte) => tryte.into()
+            Right(tryte) => tryte.into(),
         }
     }
     fn bimap_and(self, rhs: Self) -> Either<Word, Tryte> {
@@ -497,11 +508,10 @@ impl BimapEitherOps for Either<Word, Tryte> {
     }
 }
 
-
 #[cfg(test)]
 pub mod test {
-    use ternary::{trits::Trit, tryte::Tryte, word::Word};
     use itertools::Either::{Left, Right};
+    use ternary::{trits::Trit, tryte::Tryte, word::Word};
 
     use super::{Register, RegisterFile};
 
@@ -515,10 +525,7 @@ pub mod test {
         );
 
         assert_eq!(
-            reg_file.get_value((
-                Trit::Zero,
-                [Trit::POne, Trit::Zero, Trit::NOne]
-            ).into()),
+            reg_file.get_value((Trit::Zero, [Trit::POne, Trit::Zero, Trit::NOne]).into()),
             Left(Word([Trit::POne; 27]))
         );
 
@@ -528,10 +535,7 @@ pub mod test {
         );
 
         assert_eq!(
-            reg_file.get_value((
-                Trit::NOne,
-                [Trit::POne, Trit::Zero, Trit::NOne]
-            ).into()),
+            reg_file.get_value((Trit::NOne, [Trit::POne, Trit::Zero, Trit::NOne]).into()),
             Right(Tryte([Trit::POne; 9]).into())
         );
     }

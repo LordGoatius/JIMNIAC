@@ -97,7 +97,7 @@ pub trait jt1701 {
     fn rot_i(&mut self, dest: Register, src0: Register, num: Word);
 
     //== Stack ==//
-    /// (r0 + r1) * r2
+    /// r0 + (r1 * r2)
     fn push_r3(&mut self, r0: Register, r1: Register, r2: Register);
     fn push_im_word(&mut self, imm: Word);
     fn push_im_tryte(&mut self, imm: Tryte);

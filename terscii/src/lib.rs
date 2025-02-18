@@ -1,5 +1,91 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+#![allow(dead_code)]
+
+use septivigntimal::*;
+
+#[allow(non_camel_case_types)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum TERSCII {
+    NULL,
+    LE,
+    FE,
+    LR,
+    OP,
+    SU,
+    SD,
+    SP,
+    ACK,
+    NACK,
+    RT,
+    TAB,
+    Period,
+    Zero,
+    One,
+    Two,
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+    Nine,
+    Exclamation,
+    Question,
+    Minus,
+    Plus,
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+    I,
+    J,
+    K,
+    L,
+    M,
+    N,
+    O,
+    P,
+    Q,
+    R,
+    S,
+    T,
+    U,
+    V,
+    W,
+    X,
+    Y,
+    Z,
+    ADD_27_PREV,
+    a,
+    b,
+    c,
+    d,
+    e,
+    f,
+    g,
+    h,
+    i,
+    j,
+    k,
+    l,
+    m,
+    n,
+    o,
+    p,
+    q,
+    r,
+    s,
+    t,
+    u,
+    v,
+    w,
+    x,
+    y,
+    z,
+    SUB_27_PREV,
 }
 
 #[cfg(test)]
@@ -7,8 +93,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+    fn terscii() {
+        let null = TERSCII::NULL;
+        println!("{null:?}");
     }
 }

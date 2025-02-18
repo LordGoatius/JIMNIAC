@@ -1,4 +1,4 @@
-use std::ops::{Deref, DerefMut};
+use std::{fmt::Display, ops::{Deref, DerefMut}};
 
 use crate::{trits::*, word::Word};
 
@@ -122,6 +122,51 @@ impl Ord for Tryte {
         let other_isize: isize = (*other).into();
 
         self_isize.cmp(&other_isize)
+    }
+}
+
+pub fn to_letter(arr: [Trit; 3]) -> char {
+    use Trit::*;
+    match arr {
+        [NOne, NOne, NOne] => 'Z',
+        [Zero, NOne, NOne] => 'Y',
+        [POne, NOne, NOne] => 'X',
+        [NOne, Zero, NOne] => 'W',
+        [Zero, Zero, NOne] => 'V',
+        [POne, Zero, NOne] => 'U',
+        [NOne, POne, NOne] => 'T',
+        [Zero, POne, NOne] => 'S',
+        [POne, POne, NOne] => 'R',
+        [NOne, NOne, Zero] => 'Q',
+        [Zero, NOne, Zero] => 'P',
+        [POne, NOne, Zero] => 'O',
+        [NOne, Zero, Zero] => 'N',
+        [Zero, Zero, Zero] => '0',
+        [POne, Zero, Zero] => 'A',
+        [NOne, POne, Zero] => 'B',
+        [Zero, POne, Zero] => 'C',
+        [POne, POne, Zero] => 'D',
+        [NOne, NOne, POne] => 'E',
+        [Zero, NOne, POne] => 'F',
+        [POne, NOne, POne] => 'G',
+        [NOne, Zero, POne] => 'H',
+        [Zero, Zero, POne] => 'I',
+        [POne, Zero, POne] => 'J',
+        [NOne, POne, POne] => 'K',
+        [Zero, POne, POne] => 'L',
+        [POne, POne, POne] => 'M',
+    }
+}
+
+impl Display for Tryte {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if f.alternate() {
+            write!(f, "{}", <Tryte as Into<isize>>::into(*self))
+        } else {
+            let arr: [[Trit; 3]; 3] = (*self).into();
+            let arr = arr.map(to_letter);
+            write!(f, "[{}, {}, {}]", arr[0], arr[1], arr[2])
+        }
     }
 }
 

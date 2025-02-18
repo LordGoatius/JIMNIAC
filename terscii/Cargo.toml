@@ -5,3 +5,5 @@ edition = "2024"
 description = "The Ternary Standard Code for Information Exchange"
 
 [dependencies]
+ternary = { path = "../ternary" }
+septivigntimal = { path = "../septivigntimal" }

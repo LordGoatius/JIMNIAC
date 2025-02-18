@@ -96,10 +96,16 @@ version = "0.1.0"
 [[package]]
 name = "terscii"
 version = "0.1.0"
+dependencies = [
+ "septivigntimal",
+ "ternary",
+]
 
 [[package]]
 name = "testing"
 version = "0.1.0"
 dependencies = [
+ "septivigntimal",
  "termion",
+ "ternary",
 ]
