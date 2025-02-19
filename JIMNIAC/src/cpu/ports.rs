@@ -1,24 +1,30 @@
-use std::sync::{mpsc::{Receiver, Sender}, Arc, Mutex};
+use std::sync::{mpsc::{Receiver, Sender, TryRecvError}, Arc, Mutex};
+
+use ternary::tryte::Tryte;
 // NOTE: use std::sync::mpmc::Receiver;
 
-use ternary::{tryte::Tryte, word::Word};
-
-pub trait Ternary {}
-
-impl Ternary for Word {}
-impl Ternary for Tryte {}
 
 #[derive(Debug, Default)]
-pub struct Ports(Vec<Ports>);
+pub struct Ports(Vec<Port>);
 
-// impl Default for Ports {
-//     fn default() -> Self {
-//         Ports(vec![])
-//     }
-// }
+#[derive(Debug)]
+pub struct Port {
+    port_in: Receiver<Tryte>,
+    port_out: Sender<Tryte>,
+}
 
-#[derive(Default, Debug)]
-pub struct Port<T: Ternary> {
-    send_in: Option<Sender<T>>,
-    send_ou: Option<Receiver<T>>,
+impl Ports {
+    pub fn try_out(&self, port: Tryte, data: Tryte) -> Option<Tryte> {
+        let port: isize = (port.into()) ;
+        let port = port + 9841;
+
+        self.0.get(port as usize)?.port_out.send(data);
+        Some(data)
+    }
+
+    pub fn try_in(&self, port: Tryte) -> Option<Tryte> {
+        let port: isize = (port.into()) ;
+        let port = port + 9841;
+        self.0.get(port as usize)?.port_in.try_recv().ok()
+    }
 }

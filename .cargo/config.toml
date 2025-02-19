@@ -1,3 +1,3 @@
 [build]
-rustflags = ["-Zpolonius"]
+rustflags = ["-Zpolonius", "-C", "link-arg=-fuse-ld=mold"]
 target-dir = ".target"

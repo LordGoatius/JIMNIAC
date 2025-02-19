@@ -92,10 +92,6 @@ pub trait jt1701 {
     fn or_r(&mut self, dest: Register, src0: Register, src1: Register);
     // fn or_i(&mut self, dest: Register, src0: Register, mask: Word);
 
-    // FIXME: Should these be separate? - Yes
-    fn rot_r(&mut self, dest: Register, src0: Register, src1: Register);
-    fn rot_i(&mut self, dest: Register, src0: Register, num: Word);
-
     //== Stack ==//
     /// r0 + (r1 * r2)
     fn push_r3(&mut self, r0: Register, r1: Register, r2: Register);
@@ -194,10 +190,11 @@ pub trait jt1701 {
     fn bpp_m(&mut self, r0: Register, r1: Register, r2: Register, imm: Tryte);
 
     //== Ports ==//
-    fn in_r(&mut self, dest: Register, loc: Register);
+    fn in_r(&mut self, dest: Register, port: Register);
+    fn in_i(&mut self, dest: Register, port: Tryte);
 
-    fn out_r(&mut self, dest: Register, val: Register);
-    fn out_i(&mut self, dest: Register, val: Word);
+    fn out_r(&mut self, dest: Register, port: Tryte);
+    fn out_i(&mut self, dest: Tryte, port: Tryte);
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -232,8 +229,6 @@ pub enum Instruction {
     RSH(Register, Register, Tryte),
     ANDR(Register, Register, Register),
     ORR(Register, Register, Register),
-    ROTR(Register, Register, Register),
-    ROTI(Register, Register, Word),
     PUSHR3(Register, Register, Register),
     PUSHIMWORD(Word),
     PUSHIMTRYTE(Tryte),
@@ -282,8 +277,9 @@ pub enum Instruction {
     BPPI(Word),
     BPPM(Register, Register, Register, Tryte),
     INR(Register, Register),
-    OUTR(Register, Register),
-    OUTI(Register, Word),
+    INI(Register, Tryte),
+    OUTR(Register, Tryte),
+    OUTI(Tryte, Tryte),
 }
 
 impl From<Word> for Instruction {
@@ -399,12 +395,6 @@ impl From<Word> for Instruction {
             }
             [O, R, [t, ZT, ZT], ZERO, ZERO, ZERO, d, r0, r1] => {
                 Instruction::ORR((t, d).into(), (t, r0).into(), (t, r1).into())
-            }
-            [R, O, [t, Trit::POne, ZT], ZERO, ZERO, ZERO, d, r0, r1] => {
-                Instruction::ROTR((t, d).into(), (t, r0).into(), (t, r1).into())
-            }
-            [R, I, [t, Trit::NOne, ZT], i0, i1, i2, d, r, ZERO] => {
-                Instruction::ROTI((t, d).into(), (t, r).into(), [i0, i1, i2, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into())
             }
             // Stack
             [P, R, [t, ZT, ZT], r0, r1, r2, ZERO, ZERO, ZERO] => {
@@ -600,12 +590,15 @@ impl From<Word> for Instruction {
             [I, R, [t, ZT, ZT], r0, r1, ZERO, ZERO, ZERO, ZERO] => {
                 Instruction::INR((t, r0).into(), (t, r1).into())
             }
-            [O, R, [t, ZT, ZT], r0, r1, ZERO, ZERO, ZERO, ZERO] => {
-                Instruction::OUTR((t, r0).into(), (t, r1).into())
+            [I, I, [t, ZT, ZT], r, i0, i1, i2, ZERO, ZERO] => {
+                Instruction::INI((t, r).into(), [i0, i1, i2].into())
             }
-            [O, I, [t, ZT, ZT], r, i0, i1, i2, i3, i4] => Instruction::OUTI(
-                (t, r).into(),
-                [i0, i1, i2, i3, i4, ZERO, ZERO, ZERO, ZERO].into(),
+            [O, R, [t, ZT, ZT], r, i0, i1, i2, ZERO, ZERO] => {
+                Instruction::OUTR((t, r).into(), [i0, i1, i2].into())
+            }
+            [O, I, ZERO, i0, i1, i2, i3, i4, i5] => Instruction::OUTI(
+                [i0, i1, i2].into(),
+                [i3, i4, i5].into()
             ),
 
             x => {
@@ -791,21 +784,6 @@ impl From<Instruction> for Word {
                     let (_, r0) = src0.into();
                     let (_, r1) = src1.into();
                     [O, R, [t, Trit::Zero, Trit::Zero], ZERO, ZERO, ZERO, d, r0, r1].into()
-                },
-                ROTR(dest, src0, src1) => {
-                    let (t, d) = dest.into();
-                    let (_, r0) = src0.into();
-                    let (_, r1) = src1.into();
-                    [R, O, [t, Trit::POne, Trit::Zero], ZERO, ZERO, ZERO, d, r0, r1].into()
-                },
-
-                // [R, I, [t, Trit::NOne, _], i0, i1, i2, d, r, _] => {
-                //     Instruction::ROTI((t, d).into(), (t, r).into(), [i0, i1, i2, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into())
-                ROTI(dest, src, num) => {
-                    let (t, d) = dest.into();
-                    let (_, r) = src.into();
-                    let parts: [[Trit; 3]; 9] = num.into();
-                    [R, I, [t, Trit::NOne, Trit::Zero], parts[0], parts[1], parts[2], d, r, ZERO].into()
                 },
 
                 // [P, R, [t, _, _], r0, r1, r2, _, _, _] => {
@@ -1088,29 +1066,38 @@ impl From<Instruction> for Word {
                     [B, L, [t, Trit::POne, Trit::Zero], r0, r1, r2, parts[0], parts[1], parts[2]].into()
                 },
 
-                // [I, R, [t, _, _], r0, r1, _, _, _, _] => {
+                // [I, R, [t, ZT, ZT], r0, r1, ZERO, ZERO, ZERO, ZERO] => {
                 //     Instruction::INR((t, r0).into(), (t, r1).into())
                 // }
-                INR(dest, loc) => {
+                INR(dest, port) => {
                     let (t, r0) = dest.into();
-                    let (_, r1) = loc.into();
+                    let (_, r1) = port.into();
                     [I, R, [t, Trit::Zero, Trit::Zero], r0, r1, ZERO, ZERO, ZERO, ZERO].into()
                 },
-                // [O, R, [t, _, _], r0, r1, _, _, _, _] => {
-                //     Instruction::OUTR((t, r0).into(), (t, r1).into())
-                // }
-                OUTR(dest, loc) => {
-                    let (t, r0) = dest.into();
-                    let (_, r1) = loc.into();
-                    [O, R, [t, Trit::Zero, Trit::Zero], r0, r1, ZERO, ZERO, ZERO, ZERO].into()
+                // [I, I, [t, ZT, ZT], r, i0, i1, i2, ZERO, ZERO] => {
+                //     Instruction::INI((t, r).into(), [i0, i1, i2].into())
+                INI(dest, port) => {
+                    let (t, r) = dest.into();
+                    let parts: [[Trit; 3]; 3] = port.into();
+                    [I, I, [t, Trit::Zero, Trit::Zero], r, parts[0], parts[1], parts[2], ZERO, ZERO].into()
                 },
-                // [O, I, [t, _, _], r, i0, i1, i2, i3, i4] => Instruction::OUTI(
-                //     (t, r).into(),
-                //     [i0, i1, i2, i3, i4, ZERO, ZERO, ZERO, ZERO].into(),
-                OUTI(dest, imm) => {
-                    let (t, r0) = dest.into();
-                    let parts: [[Trit; 3]; 9] = imm.into();
-                    [O, I, [t, Trit::Zero, Trit::Zero], r0, parts[0], parts[1], parts[2], parts[3], parts[4]].into()
+
+                // [O, R, [t, ZT, ZT], r, i0, i1, i2, ZERO, ZERO] => {
+                //     Instruction::OUTR((t, r).into(), [i0, i1, i2].into())
+                // }
+                OUTR(dest, port) => {
+                    let (t, r) = dest.into();
+                    let parts: [[Trit; 3]; 3] = port.into();
+                    [O, R, [t, Trit::Zero, Trit::Zero], r, parts[0], parts[1], parts[2], ZERO, ZERO].into()
+                },
+                // [O, I, ZERO, i0, i1, i2, i3, i4, i5] => Instruction::OUTI(
+                //     [i0, i1, i2].into(),
+                //     [i3, i4, i5].into()
+                // ),
+                OUTI(val, port) => {
+                    let parts0: [[Trit; 3]; 3] = val.into();
+                    let parts1: [[Trit; 3]; 3] = port.into();
+                    [O, I, ZERO, parts0[0], parts0[1], parts0[2], parts1[0], parts1[1], parts1[2]].into()
                 },
             }
     }
@@ -1158,8 +1145,6 @@ pub mod test {
             RSH(R12, R10, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
             ANDR(R12, R10, RN11),
             ORR(R12, R10, RN11),
-            ROTR(R12, R10, RN11),
-            ROTI(R12, R10, [[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
             PUSHR3(R12, R10, RN11),
             PUSHIMWORD([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
             PUSHIMTRYTE([[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
@@ -1208,8 +1193,9 @@ pub mod test {
             BPPI([[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into()),
             BPPM(R12, R10, RN11, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
             INR(R12, R10),
-            OUTR(R12, R10),
-            OUTI(R12, [[Trit::Zero, Trit::POne, Trit::NOne], [Trit::POne, Trit::NOne, Trit::Zero], ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO].into())];
+            INI(R12, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            OUTR(R12, [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into()),
+            OUTI([[Trit::Zero, Trit::POne, Trit::NOne]; 3].into(), [[Trit::Zero, Trit::POne, Trit::NOne]; 3].into())];
 
         for (i, enc) in vals.into_iter().enumerate() {
             println!("{enc:?}");

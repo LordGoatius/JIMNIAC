@@ -405,6 +405,7 @@ pub trait BimapEitherOps {
     fn bimap_and(self, rhs: Self) -> Either<Word, Tryte>;
     fn bimap_or(self, rhs: Self) -> Either<Word, Tryte>;
     fn as_word(self) -> Word;
+    fn as_tryte(self) -> Tryte;
 }
 
 impl GetStatus for Either<Word, Tryte> {
@@ -453,6 +454,17 @@ impl BimapEitherOps for Either<Word, Tryte> {
             Right(tryte) => tryte.into(),
         }
     }
+
+    fn as_tryte(self) -> Tryte {
+        match self {
+            Left(word) => {
+                let tryte: [Tryte; 3] = word.into();
+                tryte[0]
+            },
+            Right(tryte) => tryte,
+        }
+    }
+
     fn bimap_and(self, rhs: Self) -> Either<Word, Tryte> {
         self.map_either(|r| r & rhs.unwrap_left(), |r| r & rhs.unwrap_right())
     }

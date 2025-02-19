@@ -130,14 +130,6 @@ impl Cpu {
                     self.or_r(dest, src0, src1);
                     self.inc_pc();
                 }
-                ROTR(dest, src0, src1) => {
-                    self.rot_r(dest, src0, src1);
-                    self.inc_pc();
-                }
-                ROTI(dest, src0, num) => {
-                    self.rot_i(dest, src0, num);
-                    self.inc_pc();
-                }
                 PUSHR3(r0, r1, r2) => {
                     self.push_r3(r0, r1, r2);
                     self.inc_pc();
@@ -287,16 +279,20 @@ impl Cpu {
                 BPPM(r0, r1, r2, imm) => {
                     self.bpp_m(r0, r1, r2, imm);
                 }
-                INR(dest, loc) => {
-                    self.in_r(dest, loc);
+                INR(dest, port) => {
+                    self.in_r(dest, port);
                     self.inc_pc();
                 }
-                OUTR(dest, loc) => {
-                    self.out_r(dest, loc);
+                INI(dest, port) => {
+                    self.in_i(dest, port);
                     self.inc_pc();
                 }
-                OUTI(dest, loc) => {
-                    self.out_i(dest, loc);
+                OUTR(dest, port) => {
+                    self.out_r(dest, port);
+                    self.inc_pc();
+                }
+                OUTI(dest, port) => {
+                    self.out_i(dest, port);
                     self.inc_pc();
                 }
             }

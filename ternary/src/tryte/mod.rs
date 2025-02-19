@@ -1,11 +1,12 @@
 use std::{fmt::Display, ops::{Deref, DerefMut}};
 
-use crate::{trits::*, word::Word};
+use crate::{trits::*, word::{consts::TWO_TRYTE, Word}};
 
 pub mod binops;
 pub mod tritops;
 pub mod unops;
 
+#[repr(transparent)]
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Tryte(pub [Trit; 9]);
 
@@ -24,6 +25,20 @@ impl Tryte {
         } else {
             value
         }
+    }
+
+    pub const fn isize(self: Tryte) -> isize {
+        let mut res = 0;
+        let mut i = 0;
+        while i < self.0.len() {
+            res += match self.0[i] {
+                Trit::NOne => -isize::pow(3, i as u32),
+                Trit::Zero => 0,
+                Trit::POne => isize::pow(3, i as u32),
+            };
+            i += 1;
+        }
+        res
     }
 }
 
@@ -84,22 +99,39 @@ impl From<Tryte> for isize {
     }
 }
 
-// THIS IS TERRIBLE DO NOT READ PLEASE DON'T JUDGE ME FOR THIS
-// I DESERVE JUDGEMENT ON MY MERITS NOT MY TERRIBLE LAZY WORKAROUNDS
-// I'M SURE THE SOLUTION IS OBVIOUS USING MODULAR ARITHMETIC BUT
-// CONSIDER, I NEED TO TEST MY PROGRAM RN NOT DEVISE MY OWN ALGORITHM
+
+impl From<Trit> for Tryte {
+    fn from(value: Trit) -> Self {
+        let mut def = Tryte::default();
+        def[0] = value;
+        def
+    }
+}
+
 impl From<isize> for Tryte {
-    fn from(value: isize) -> Self {
-        let mut val = Tryte::default();
-        if value == 0 {
-            return val;
-        }
-        let sign = if value > 0 { Trit::POne } else { Trit::NOne };
-        while value != val.into() {
-            val = (val + sign).result;
+    fn from(mut value: isize) -> Self {
+        let mut sum = Tryte::default();
+        let neg = value.is_negative();
+
+        if neg {
+            value = -value;
         }
 
-        val
+        for i in 0..((8 * size_of::<isize>()) - 1) {
+            let bit: Tryte = match (value >> i) & 1 {
+                0 => Trit::Zero,
+                1 => Trit::POne,
+                _ => unreachable!()
+            }.into();
+
+            sum = (sum + (bit * Tryte::pow_isize(TWO_TRYTE, i as isize))).result;
+        }
+
+        if neg {
+            sum = -sum;
+        }
+
+        return sum;
     }
 }
 
@@ -179,7 +211,9 @@ pub mod test {
     #[test]
     fn test_from_isize() {
         let tryte: Tryte = [Trit::NOne, Trit::POne, Trit::POne, Trit::Zero, Trit::Zero, Trit::Zero, Trit::Zero, Trit::Zero, Trit::Zero].into();
-        assert_eq!(11isize, tryte.into());
+        let neg_tryte = -tryte;
+        assert_eq!(tryte, 11isize.into());
+        assert_eq!(neg_tryte, (-11isize).into());
     }
 
     #[test]

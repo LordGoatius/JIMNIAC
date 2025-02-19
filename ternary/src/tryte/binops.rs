@@ -1,4 +1,4 @@
-use crate::errors::DivByZeroError;
+use crate::{errors::DivByZeroError, word::consts::ONE_TRYTE};
 
 use super::*;
 use std::ops::{Add, Div, Mul, Rem, Sub};
@@ -12,6 +12,27 @@ pub struct EuclideanDivisionResult {
 }
 
 //== Binary Ops ==//
+
+impl Tryte {
+    pub fn pow_isize(lhs: Tryte, rhs: isize) -> Tryte {
+        if rhs < 0 {
+            return Tryte::default();
+        } else if rhs == 1 {
+            return lhs;
+        } else if lhs == ONE_TRYTE {
+            return lhs;
+        } else {
+            let mut ret = ONE_TRYTE;
+            let mut count = rhs;
+            while count > 0 {
+                ret = ret * lhs;
+                count -= 1;
+            }
+            ret
+        }
+
+    }
+}
 
 impl Add for Tryte {
     type Output = TryteAddResult;

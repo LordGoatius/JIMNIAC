@@ -1,5 +1,7 @@
 use std::{hash::Hash, ops::{Deref, DerefMut}};
 
+use consts::TWO_WORD;
+
 use crate::{trits::*, tryte::Tryte};
 
 pub mod binops;
@@ -7,6 +9,7 @@ pub mod unops;
 pub mod tritops;
 pub mod consts;
 
+#[repr(transparent)]
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Word(pub [Trit; 27]);
 
@@ -102,22 +105,38 @@ impl From<Word> for isize {
     }
 }
 
-// THIS IS TERRIBLE DO NOT READ PLEASE DON'T JUDGE ME FOR THIS
-// I DESERVE JUDGEMENT ON MY MERITS NOT MY TERRIBLE LAZY WORKAROUNDS
-// I'M SURE THE SOLUTION IS OBVIOUS USING MODULAR ARITHMETIC BUT
-// CONSIDER, I NEED TO TEST MY PROGRAM RN NOT DEVISE MY OWN ALGORITHM
+impl From<Trit> for Word {
+    fn from(value: Trit) -> Self {
+        let mut def = Word::default();
+        def[0] = value;
+        def
+    }
+}
+
 impl From<isize> for Word {
-    fn from(value: isize) -> Self {
-        let mut val = Word::default();
-        if value == 0 {
-            return val;
-        }
-        let sign = if value > 0 { Trit::POne } else { Trit::NOne };
-        while value != val.into() {
-            val = (val + sign).result;
+    fn from(mut value: isize) -> Self {
+        let mut sum = Word::default();
+        let neg = value.is_negative();
+
+        if neg {
+            value = -value;
         }
 
-        val
+        for i in 0..((8 * size_of::<isize>()) - 1) {
+            let bit: Word = match (value >> i) & 1 {
+                0 => Trit::Zero,
+                1 => Trit::POne,
+                _ => unreachable!()
+            }.into();
+
+            sum = (sum + (bit * Word::pow_isize(TWO_WORD, i as isize))).result;
+        }
+
+        if neg {
+            sum = -sum;
+        }
+
+        return sum;
     }
 }
 

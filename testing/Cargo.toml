@@ -6,4 +6,5 @@ edition = "2024"
 [dependencies]
 ternary = { path = "../ternary" }
 septivigntimal = { path = "../septivigntimal" }
+terscii = { path = "../terscii" }
 termion = "4.0.3"

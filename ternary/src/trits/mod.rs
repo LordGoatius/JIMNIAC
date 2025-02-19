@@ -37,6 +37,16 @@ impl Add<Trit> for Trit {
     }
 }
 
+impl From<Trit> for isize {
+    fn from(value: Trit) -> Self {
+        match value {
+            Trit::NOne => -1,
+            Trit::Zero => 0,
+            Trit::POne => 1,
+        }
+    }
+}
+
 /// ONLY TO MAKE ADDING 3 TRITS ERGONOMICAL ONLY
 impl Add<Trit> for TritAddResult {
     type Output = TritAddResult;

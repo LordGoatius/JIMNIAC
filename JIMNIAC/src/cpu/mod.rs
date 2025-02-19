@@ -468,16 +468,6 @@ impl jt1701 for Cpu {
         );
     }
 
-    // FIXME
-    fn rot_r(&mut self, dest: Register, src0: Register, src1: Register) {
-        todo!()
-    }
-
-    // FIXME
-    fn rot_i(&mut self, dest: Register, src0: Register, mask: Word) {
-        todo!()
-    }
-
     //== Stack ==//
     /// r0 + (r1 * r2)
     fn push_r3(&mut self, r0: Register, r1: Register, r2: Register) {
@@ -1299,16 +1289,32 @@ impl jt1701 for Cpu {
     // TODO
 
     //== Ports ==//
-    fn in_r(&mut self, dest: Register, loc: Register) {
-        todo!()
+    fn in_r(&mut self, dest: Register, port: Register) {
+        let port = self.register_file.get_tryte(port);
+        match self.ports.try_in(port) {
+            Some(tryte) => self.register_file.set_value_either(dest, Right(tryte)),
+            // TODO: Port not exist error?
+            None => self.register_file.set_value_either(dest, Right(Tryte::default())),
+        }
     }
 
-    fn out_r(&mut self, dest: Register, loc: Register) {
-        todo!()
+    fn in_i(&mut self, dest: Register, port: Tryte) {
+        match self.ports.try_in(port) {
+            Some(tryte) => self.register_file.set_value_either(dest, Right(tryte)),
+            // TODO: Port not exist error?
+            None => self.register_file.set_value_either(dest, Right(Tryte::default())),
+        }
     }
 
-    fn out_i(&mut self, dest: Register, val: Word) {
-        todo!()
+    fn out_r(&mut self, dest: Register, port: Tryte) {
+        let data = self.register_file.get_tryte(dest);
+        // TODO: Port not exist error?
+        let _ = self.ports.try_out(port, data);
+    }
+
+    fn out_i(&mut self, data: Tryte, port: Tryte) {
+        // TODO: Port not exist error?
+        let _ = self.ports.try_out(port, data);
     }
 }
 
