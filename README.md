@@ -3,7 +3,7 @@ The docs for the current iteration of this project are in progress. It is much m
 
 Ops:
 ```
-  CPU | STR    | LD     | MOV   | ALU  | TRIT | STACK | BRANCH | IO
+  CPU | LD     | STR    | MOV   | ALU  | TRIT | STACK | BRANCH | IO
 ____________________________________________________________________
  lit  | ldri   | stri   | movri | add  | not  | pushr |  cmp   | inr
  hlt  | ldrr   | strr   | movrr | mul  | lsh  | pushi |  spt   | ini
