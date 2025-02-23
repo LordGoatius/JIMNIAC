@@ -23,10 +23,10 @@ ____________________________________________________________________
       |        |        |       |      |      |       |  bpp   |
 ```
 
-## Previous Version
+# Previous Version
 In a previous version of this project I made a Harvard architecture virtual machine which operated on balanced ternary machine code.
 
-# Operations
+## Operations
 ```
 Bit	| ALU	| Branch | Stack | Flags
 _____________________________________
@@ -48,7 +48,7 @@ These are all of the instructions in the current Ternary virtual machine
 Its properties are odd, has no exact size for address space, and is overall incomplete.
 But it is functional, so here is a guide.
 
-# Assembly Language
+### Assembly Language
 You can use labels to do control flow. Execution begins at the first nonlabel instruction.
 Example program:
 ```asm
@@ -69,7 +69,6 @@ label2:
 ```
 
 There is no halt instruction, so just infinite loop instead. Turing failed to consider this in the halting problem I think.
-=======
 
 This repository contains all of my work on my von Neumann architecture ternary virtual machine.
 
