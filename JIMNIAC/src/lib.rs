@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![feature(mpmc_channel)]
 #![feature(test)]
 
 pub mod tryte;

@@ -6,11 +6,11 @@ Ops:
   CPU | STR    | LD     | MOV   | ALU  | TRIT | STACK | BRANCH | IO
 ____________________________________________________________________
  lit  | ldri   | stri   | movri | add  | not  | pushr |  cmp   | inr
- hlt  | ldrr   | strr   | movrr | mul  | lsh  | pushi |  spt   | outr
- int  | ldrri  | strri  |       | sub  | rsh  | popr  |  sst   | outi
- nop  | ldrpci | strpci |       | eqot | and  | popi  |  br    |
+ hlt  | ldrr   | strr   | movrr | mul  | lsh  | pushi |  spt   | ini
+ int  | ldrri  | strri  |       | sub  | rsh  | popr  |  sst   | outr
+ nop  | ldrpci | strpci |       | eqot | and  | popi  |  br    | outi
  wfi   |        |        |       | erem | or   |       |  bne   |
- sti  |        |        |       |      | rot  |       |  bgt   |
+ sti  |        |        |       |      |      |       |  bgt   |
  bti  |        |        |       |      |      |       |  blt   |
  rti  |        |        |       |      |      |       |  beq   |
       |        |        |       |      |      |       |  bgeq  |

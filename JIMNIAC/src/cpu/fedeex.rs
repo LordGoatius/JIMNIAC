@@ -40,7 +40,10 @@ impl Cpu {
                     self.inc_pc();
                 }
                 RTI => {
+                    // returns to interrupt
                     self.rti();
+                    // doesn't call int again because that would be dumb
+                    self.inc_pc();
                 }
                 LDRI(dest, src, imm) => {
                     self.ldri(dest, src, imm);

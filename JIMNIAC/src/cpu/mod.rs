@@ -1,5 +1,5 @@
 #![expect(unused)]
-use std::ops::{BitAnd, Not, Shl};
+use std::{ops::{BitAnd, Not, Shl}, sync::{atomic::AtomicI64, mpmc::{self, Sender, Receiver}}};
 
 use jt1701isa::jt1701;
 use ports::Ports;
@@ -34,28 +34,39 @@ pub mod jt1701isa;
 pub mod registers;
 pub mod statusword;
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Cpu {
-    // Done
+    // Basic Functionality
     register_file: RegisterFile,
     program_counter: Word,
-    // Partial, can update as needed
+    stack: Stack,
+    // Interrupts and Status
+    pci: (Sender<Tryte>, Receiver<Tryte>),
     cpu_state_reg: StatusWord,
     saved_prog_status_reg: StatusWord,
-    interrupt_vector: Option<Tryte>,
-    // Done
-    stack: Stack,
-    // TODO
+    interrupt_vector: Option<Word>,
+    interrupt_return_register: Word,
+    timer: AtomicI64,
+    // Ports and IO
     ports: Ports,
 }
 
-// impl Default for Cpu {
-//     fn default() -> Self {
-//         Cpu {
-//             ..Default::default()
-//         }
-//     }
-// }
+impl Default for Cpu {
+    fn default() -> Self {
+        Cpu {
+            register_file: RegisterFile::default(),
+            program_counter: Word::default(),
+            stack: Stack::default(),
+            pci: mpmc::channel(),
+            cpu_state_reg: StatusWord::default(),
+            saved_prog_status_reg: StatusWord::default(),
+            interrupt_vector: None,
+            interrupt_return_register: Word::default(),
+            timer: AtomicI64::new(i64::MIN),
+            ports: Ports::default()
+        }
+    }
+}
 
 impl Cpu {
     fn copy_program_to_stack(&mut self, begin: Word, program: Vec<Tryte>) {
@@ -65,6 +76,19 @@ impl Cpu {
             self.stack.insert(addr, tryte);
             addr = (addr + Trit::POne).result;
         }
+    }
+
+    fn enter_interrupt(&mut self, interrupt: Tryte) {
+        // Save state
+        self.saved_prog_status_reg = self.cpu_state_reg;
+        // Disable interrupting interrupt
+        self.cpu_state_reg.set_interrupt_enable(Trit::NOne);
+        // Save return address
+        self.interrupt_return_register = self.program_counter;
+        // Push registers
+        // Access vector, index into interrupt vector to find address
+        // Jump to address
+        todo!()
     }
 
     fn inc_pc(&mut self) {
@@ -78,11 +102,10 @@ impl jt1701 for Cpu {
     fn lht(&mut self, register: Register) {
         match  self.register_file.get_value(register) {
             Left(word) => {
-                let word: [Tryte; 3] = word.into();
-                self.cpu_state_reg.set_interrupt_vector(word[0]);
+                self.interrupt_vector = Some(word);
             },
             Right(tryte) => {
-                self.cpu_state_reg.set_interrupt_vector(tryte);
+                self.interrupt_vector = Some(tryte.into())
             }
         }
     }
@@ -90,11 +113,26 @@ impl jt1701 for Cpu {
     fn hlt(&mut self) {
         return;
     }
-    // TODO
-    /// Interrupt
+
+    /// Software Interrupt
     fn int(&mut self, interrupt: Tryte) {
-        todo!()
+        if (self.cpu_state_reg.get_interrupt_enable() == Trit::NOne) {
+            return;
+        }
+
+        self.pci.0.send(interrupt);
     }
+
+    /// Returns from interrupt and restores status register
+    fn rti(&mut self) {
+        // Assuming stack is rebalanced from (int) instruction
+        // Pop Registers
+        // Jump to return address
+        self.cpu_state_reg.set_interrupt_enable(Trit::POne);
+        self.cpu_state_reg = self.saved_prog_status_reg;
+        self.program_counter = self.interrupt_return_register;
+    }
+
     /// No Op
     fn nop(&self) {
         return;
@@ -111,11 +149,6 @@ impl jt1701 for Cpu {
     /// Begin Interrupts
     fn bti(&mut self) {
         self.cpu_state_reg.set_interrupt_enable(Trit::POne);
-    }
-    // TODO
-    /// Returns from interrupt and restores status register
-    fn rti(&mut self) {
-        todo!()
     }
 
     //== Loading Register from Memory ==//
@@ -1341,7 +1374,7 @@ pub mod test {
         cpu.movrr(R11, R12);
         // LHT(R11)
         cpu.lht(R11);
-        assert_eq!(cpu.cpu_state_reg.get_interrupt_vector(), tryte);
+        assert_eq!(cpu.interrupt_vector, Some(tryte.into()));
 
         // let instr = INT([[Trit::Zero, Trit::POne, Trit::NOne]; 3].into());
         cpu.sti();

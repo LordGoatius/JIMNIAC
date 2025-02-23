@@ -4,7 +4,7 @@ use ternary::{trits::Trit, tryte::Tryte, word::Word};
 
 /// Status Word:
 /// [C, S, P, I, R, _, _, _, _,
-///  interrupt_vector,
+///  [_; 9],
 ///  interrupt_number,
 /// ]
 /// C: Carry Flag
@@ -14,7 +14,7 @@ use ternary::{trits::Trit, tryte::Tryte, word::Word};
 /// R: Privledge Level
 /// N: Interrupt number
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct StatusWord(Word);
 
 impl Deref for StatusWord {
@@ -62,12 +62,6 @@ impl StatusWord {
         *self = StatusWord([first, second, num].into());
     }
 
-    #[inline]
-    pub(crate) fn set_interrupt_vector(&mut self, addr: Tryte) {
-        let [first, _, last] = self.0.into();
-        *self = StatusWord([first, addr, last].into());
-    }
-
     // Getting
     #[inline]
     pub(crate) fn get_carry_flag(&self) -> Trit {
@@ -98,11 +92,5 @@ impl StatusWord {
     pub(crate) fn get_interrupt_number(&mut self) -> Tryte {
         let [_, _, num] = self.0.into();
         num
-    }
-
-    #[inline]
-    pub(crate) fn get_interrupt_vector(&self) -> Tryte {
-        let [_, addr, _] = self.0.into();
-        addr
     }
 }
