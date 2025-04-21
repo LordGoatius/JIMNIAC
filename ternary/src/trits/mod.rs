@@ -1,11 +1,24 @@
 use std::ops::{Add, BitAnd, BitOr, Mul, Neg, Not};
+use packed_struct::prelude::*;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
+#[cfg_attr(feature = "packed", derive(PrimitiveEnum_u8))]
+#[repr(u8)]
 pub enum Trit {
-    NOne,
+    NOne = 0b01,
     #[default]
-    Zero,
-    POne,
+    Zero = 0b10,
+    POne = 0b11,
+}
+
+impl From<Trit> for char {
+    fn from(value: Trit) -> Self {
+        match value {
+            Trit::NOne => 'T',
+            Trit::Zero => '0',
+            Trit::POne => '1',
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]

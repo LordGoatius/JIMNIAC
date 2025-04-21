@@ -396,42 +396,42 @@ pub mod test {
         use super::Instruction::*;
         let mut cpu = Cpu::default();
         cpu.program_counter = Word::default();
-        // 0  mov %RN13, 6
-        //    ; (call fact)
-        // 3  push 60 ; push continue address to stack
-        // 6  b fact
-        //    ; fact(7)
-        //    ; // ARG: RN13
-        //    ; // RET: RN12
-        //    fact:
-        // 9      push %BP
-        // 12     mov  %BP, %SP
-        // 15     mov  %RN11, 2
-        // 18     cmp  %RN13, %RN11
-        // 21     bgti calcs
-        // 24     mov  %RN12, 2
-        // 27     b return
-        //    calcs:
-        //        ; move argument onto stack
-        // 30     push %RN13
-        //        ; subtract one from argument
-        // 33     sub  %RN13, 1
-        // 36     push 42 ; push continue address to stack
-        //        ; addr will be popped off by return
-        //        ; call again
-        // 39     b fact ; (call fact)
-        //        ; value will be in %RN12
-        // 42     pop %RN10
-        //        ; multiply return value with value on the stack
-        // 45     mul %RN12, %RN12, %RN10
-        //    return:
-        // 48     pop  %BP
-        //        ; pop return address into %RN10
-        // 51     pop  %RN10
-        // 54     mov  %R4, 1
-        // 57     b %RN10 ; * R4
-        //
-        // 60 hlt
+        /// 0  mov %RN13, 6
+        ///    ; (call fact)
+        /// 3  push 60 ; push continue address to stack
+        /// 6  b fact
+        ///    ; fact(7)
+        ///    ; // ARG: RN13
+        ///    ; // RET: RN12
+        ///    fact:
+        /// 9      push %BP
+        /// 12     mov  %BP, %SP
+        /// 15     mov  %RN11, 2
+        /// 18     cmp  %RN13, %RN11
+        /// 21     bgti calcs
+        /// 24     mov  %RN12, 2
+        /// 27     b return
+        ///    calcs:
+        ///        ; move argument onto stack
+        /// 30     push %RN13
+        ///        ; subtract one from argument
+        /// 33     sub  %RN13, 1
+        /// 36     push 42 ; push continue address to stack
+        ///        ; addr will be popped off by return
+        ///        ; call again
+        /// 39     b fact ; (call fact)
+        ///        ; value will be in %RN12
+        /// 42     pop %RN10
+        ///        ; multiply return value with value on the stack
+        /// 45     mul %RN12, %RN12, %RN10
+        ///    return:
+        /// 48     pop  %BP
+        ///        ; pop return address into %RN10
+        /// 51     pop  %RN10
+        /// 54     mov  %R4, 1
+        /// 57     b %RN10 ; * R4
+        ///
+        /// 60 hlt
         let instrs = vec![
             MOVRI(RN13, 6.into()),
             PUSHIMWORD(60.into()),

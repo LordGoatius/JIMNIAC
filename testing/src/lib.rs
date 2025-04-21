@@ -150,6 +150,9 @@ impl Cpu {
                             let char: char = char.into();
                             //print!("{}: {}", msg, char);
                             print!("{}", char);
+                            if char == '\n' {
+                                print!("\r");
+                            }
                             stdout.flush().unwrap();
                         }
                     }

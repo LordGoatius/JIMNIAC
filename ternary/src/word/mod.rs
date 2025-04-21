@@ -8,6 +8,8 @@ pub mod binops;
 pub mod unops;
 pub mod tritops;
 pub mod consts;
+#[cfg(feature = "packed")]
+pub mod packed;
 
 #[repr(transparent)]
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
@@ -122,7 +124,7 @@ impl From<isize> for Word {
             value = -value;
         }
 
-        for i in 0..((8 * size_of::<isize>()) - 1) {
+        for i in 0..(isize::BITS - 1) {
             let bit: Word = match (value >> i) & 1 {
                 0 => Trit::Zero,
                 1 => Trit::POne,
@@ -136,7 +138,7 @@ impl From<isize> for Word {
             sum = -sum;
         }
 
-        return sum;
+        sum
     }
 }
 

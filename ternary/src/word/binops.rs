@@ -1,7 +1,7 @@
 use crate::errors::DivByZeroError;
 
 use super::{consts::ONE_WORD, *};
-use std::ops::{Add, Div, Mul, Rem, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Rem, Sub};
 
 //== Euc Div Result ==//
 
@@ -16,11 +16,9 @@ pub struct EuclideanDivisionResult {
 impl Word {
     pub fn pow_isize(lhs: Word, rhs: isize) -> Word {
         if rhs < 0 {
-            return Word::default();
-        } else if rhs == 1 {
-            return lhs;
-        } else if lhs == ONE_WORD {
-            return lhs;
+            Word::default()
+        } else if rhs == 1 || lhs == ONE_WORD {
+            lhs
         } else {
             let mut ret = ONE_WORD;
             let mut count = rhs;
@@ -51,6 +49,12 @@ impl Add for Word {
             result: output,
             carry: result.carry,
         }
+    }
+}
+
+impl AddAssign for Word {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = (*self + rhs).result;
     }
 }
 

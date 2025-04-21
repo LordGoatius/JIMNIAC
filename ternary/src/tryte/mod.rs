@@ -1,10 +1,12 @@
-use std::{fmt::Display, ops::{Deref, DerefMut}};
+use std::{fmt::{Binary, Display}, ops::{Deref, DerefMut}};
 
 use crate::{trits::*, word::{consts::TWO_TRYTE, Word}};
 
 pub mod binops;
 pub mod tritops;
 pub mod unops;
+#[cfg(feature = "packed")]
+pub mod packed;
 
 #[repr(transparent)]
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
@@ -117,7 +119,7 @@ impl From<isize> for Tryte {
             value = -value;
         }
 
-        for i in 0..((8 * size_of::<isize>()) - 1) {
+        for i in 0..(isize::BITS - 1) {
             let bit: Tryte = match (value >> i) & 1 {
                 0 => Trit::Zero,
                 1 => Trit::POne,
@@ -131,7 +133,7 @@ impl From<isize> for Tryte {
             sum = -sum;
         }
 
-        return sum;
+        sum
     }
 }
 
@@ -190,14 +192,26 @@ pub fn to_letter(arr: [Trit; 3]) -> char {
     }
 }
 
+impl Binary for Tryte {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let prefix = if f.alternate() {
+            "0t"
+        } else {
+            ""
+        };
+
+        f.pad(&format!("{}{}", prefix, self.iter().map(|trit| <Trit as Into<char>>::into(*trit)).collect::<String>())[..])
+    }
+}
+
 impl Display for Tryte {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if f.alternate() {
-            write!(f, "{}", <Tryte as Into<isize>>::into(*self))
+            f.pad(&format!("{}", <Tryte as Into<isize>>::into(*self))[..])
         } else {
             let arr: [[Trit; 3]; 3] = (*self).into();
             let arr = arr.map(to_letter);
-            write!(f, "[{}, {}, {}]", arr[0], arr[1], arr[2])
+            f.pad(&format!("[{}, {}, {}]", arr[0], arr[1], arr[2])[..])
         }
     }
 }
