@@ -1,8 +1,6 @@
 use std::ops::{Add, BitAnd, BitOr, Mul, Neg, Not};
-use packed_struct::prelude::*;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
-#[cfg_attr(feature = "packed", derive(PrimitiveEnum_u8))]
 #[repr(u8)]
 pub enum Trit {
     NOne = 0b01,
