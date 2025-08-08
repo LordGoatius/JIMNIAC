@@ -5,6 +5,7 @@ use crate::{trits::*, word::{consts::TWO_TRYTE, Word}};
 pub mod binops;
 pub mod tritops;
 pub mod unops;
+pub mod consts;
 #[cfg(feature = "packed")]
 pub mod packed;
 
