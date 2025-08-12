@@ -50,6 +50,12 @@ impl From<[Trit; 9]> for Tryte {
     }
 }
 
+impl From<[[Trit; 3]; 3]> for Tryte {
+    fn from(value: [[Trit; 3]; 3]) -> Self {
+        unsafe { std::mem::transmute::<[[Trit; 3]; 3], [Trit; 9]>(value) }.into()
+    }
+}
+
 impl From<Trit> for Tryte {
     fn from(value: Trit) -> Self {
         [
@@ -180,16 +186,11 @@ impl Shl<usize> for Tryte {
     type Output = Tryte;
 
     fn shl(self, rhs: usize) -> Self::Output {
-        let arr: [Trit; 9] = self.into();
-        if rhs > 9 {
-            Tryte::ZERO
-        } else {
-            let mut ret: [Trit; 9] = Tryte::ZERO.into();
-            for i in 0..(9-rhs) {
-                ret[rhs + i] = arr[i];
-            }
-            ret.into()
-        }
+        Tryte(
+            #[rustfmt::ignore]
+            ((self.0 << (2 * rhs)) & TRYTE_BIT_MASK)
+                | (Tryte::ZERO.0 >> (TRYTE_BIT_LEN - (2 * rhs))),
+        )
     }
 }
 
@@ -197,7 +198,10 @@ impl Shr<usize> for Tryte {
     type Output = Tryte;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        todo!()
+        Tryte(
+            ((self.num() >> (2 * rhs)) & TRYTE_BIT_MASK)
+                | (Tryte::ZERO.0 << (TRYTE_BIT_LEN - (2 * rhs))),
+        )
     }
 }
 
@@ -222,22 +226,30 @@ impl Mul for Tryte {
 }
 
 impl Div for Tryte {
-    type Output = Tryte;
+    type Output = Option<Tryte>;
 
     fn div(self, rhs: Self) -> Self::Output {
-        let lhs: isize = self.into();
-        let rhs: isize = rhs.into();
-        lhs.div_euclid(rhs).into()
+        if rhs == Tryte::ZERO {
+            None
+        } else {
+            let lhs: isize = self.into();
+            let rhs: isize = rhs.into();
+            Some(lhs.div_euclid(rhs).into())
+        }
     }
 }
 
 impl Rem for Tryte {
-    type Output = Tryte;
+    type Output = Option<Tryte>;
 
     fn rem(self, rhs: Self) -> Self::Output {
-        let lhs: isize = self.into();
-        let rhs: isize = rhs.into();
-        lhs.rem_euclid(rhs).into()
+        if rhs == Tryte::ZERO {
+            None
+        } else {
+            let lhs: isize = self.into();
+            let rhs: isize = rhs.into();
+            Some(lhs.rem_euclid(rhs).into())
+        }
     }
 }
 
@@ -268,6 +280,54 @@ impl Tryte {
     pub const ZERO: Tryte = Tryte(0b101010101010101010);
     pub const NONE: Tryte = Tryte(0b101010101010101001);
     pub const TWO: Tryte = Tryte(0b101010101010101101);
+
+    pub const fn isize(&self) -> isize {
+        let value = self.0;
+        let mut arr = [Trit::Zero; 9];
+        let mut count = 0;
+        while count < 9 {
+            arr[count] = unsafe {
+                std::mem::transmute::<u8, Trit>(
+                    ((value >> (2 * count)) & TRIT_BIT_MASK as u32) as u8,
+                )
+            };
+            count += 1;
+        }
+        let mut count = 0;
+        let mut sum = 0;
+        while count < 9 {
+            let trit = match arr[count] {
+                Trit::NOne => -1,
+                Trit::Zero => 0,
+                Trit::POne => 1,
+            };
+            sum += 3isize.pow(count as u32) * trit;
+            count += 1;
+        }
+        sum
+    }
+
+    pub const fn from_arr_2d(value: [[Trit; 3]; 3]) -> Tryte {
+        let val = [
+            value[0][0],
+            value[0][1],
+            value[0][2],
+            value[1][0],
+            value[1][1],
+            value[1][2],
+            value[2][0],
+            value[2][1],
+            value[2][2],
+        ];
+        let mut inner = 0;
+        let mut count = 0;
+        while count < 9 {
+            let val = val[count] as u32;
+            inner |= val << (2 * count);
+            count += 1;
+        }
+        Tryte(inner)
+    }
 
     pub fn pow_isize(lhs: Tryte, rhs: isize) -> Tryte {
         if rhs < 0 {
@@ -465,6 +525,22 @@ pub mod test {
         }
     }
 
+    #[test]
+    fn test_shr() {
+        let val = 1;
+        let tryte = Tryte::PONE << 8;
+        for i in 0..9 {
+            assert_eq!(tryte >> i, 3isize.pow((8 - i) as u32).into());
+        }
+    }
+
+    #[test]
+    fn test_shl() {
+        let tryte = Tryte::PONE;
+        for i in 0..9 {
+            assert_eq!(tryte << i, 3isize.pow(i as u32).into());
+        }
+    }
     extern crate test;
 
     #[bench]
@@ -476,8 +552,8 @@ pub mod test {
         let i_tryte: Tryte = (-9840).into();
         let r_tryte: Tryte = 18.into();
         b.iter(|| {
-            assert_eq!(div, (i_tryte / r_tryte).into());
-            assert_eq!(rem, (i_tryte % r_tryte).into());
+            assert_eq!(div, (i_tryte / r_tryte).unwrap().into());
+            assert_eq!(rem, (i_tryte % r_tryte).unwrap().into());
         });
     }
 }

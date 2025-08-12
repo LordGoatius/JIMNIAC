@@ -2,7 +2,7 @@
 resolver = "3"
 members = [
 "ternary", "terscii", "septivigntimal"
-]
+, "JX_01"]
 
 [workspace.dependencies]
 itertools = "^0.14.0"

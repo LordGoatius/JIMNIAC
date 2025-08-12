@@ -4,7 +4,7 @@ use septivigntimal::*;
 use ternary::{trits::Trit, tryte::Tryte};
 
 const fn isize(val: [[Trit; 3]; 3]) -> isize {
-    unsafe { std::mem::transmute::<[[Trit; 3]; 3], Tryte>(val).isize() }
+    Tryte::from_arr_2d(val).isize()
 }
 
 #[allow(non_camel_case_types)]

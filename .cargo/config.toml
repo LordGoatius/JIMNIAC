@@ -1,3 +1,9 @@
 [build]
 rustflags = ["-Zpolonius", "-C", "link-arg=-fuse-ld=mold"]
 target-dir = ".target"
+
+[unstable]
+codegen-backend = true
+
+[profile.dev]
+codegen-backend = "cranelift"

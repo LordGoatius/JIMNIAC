@@ -52,6 +52,12 @@ impl From<[Tryte; 3]> for Word {
     }
 }
 
+impl From<[[Trit; 3]; 9]> for Word {
+    fn from(value: [[Trit; 3]; 9]) -> Self {
+        unsafe { std::mem::transmute::<[[Trit; 3]; 9], [Trit; 27]>(value) }.into()
+    }
+}
+
 impl From<Tryte> for Word {
     fn from(value: Tryte) -> Self {
         Word(value.num() as u64 | WORD_ZERO_TOP)
@@ -92,7 +98,6 @@ impl From<Trit> for Word {
         .into()
     }
 }
-
 
 impl From<Word> for [Trit; 27] {
     fn from(value: Word) -> Self {
@@ -225,8 +230,8 @@ impl Shl<usize> for Word {
     fn shl(self, rhs: usize) -> Self::Output {
         Word(
             #[rustfmt::ignore]
-            ((self.0 << (2 * rhs)) & WORD_BIT_MASK) |
-            (Word::ZERO.0 >> (WORD_BIT_LEN - (2 * rhs)))
+            ((self.0 << (2 * rhs)) & WORD_BIT_MASK)
+                | (Word::ZERO.0 >> (WORD_BIT_LEN - (2 * rhs))),
         )
     }
 }
@@ -235,7 +240,10 @@ impl Shr<usize> for Word {
     type Output = Word;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        todo!()
+        Word(
+            ((self.num() >> (2 * rhs)) & WORD_BIT_MASK)
+                | (Word::ZERO.0 << (WORD_BIT_LEN - (2 * rhs))),
+        )
     }
 }
 
@@ -260,22 +268,30 @@ impl Mul for Word {
 }
 
 impl Div for Word {
-    type Output = Word;
+    type Output = Option<Word>;
 
     fn div(self, rhs: Self) -> Self::Output {
-        let lhs: isize = self.into();
-        let rhs: isize = rhs.into();
-        lhs.div_euclid(rhs).into()
+        if rhs == Word::ZERO {
+            None
+        } else {
+            let lhs: isize = self.into();
+            let rhs: isize = rhs.into();
+            Some(lhs.div_euclid(rhs).into())
+        }
     }
 }
 
 impl Rem for Word {
-    type Output = Word;
+    type Output = Option<Word>;
 
     fn rem(self, rhs: Self) -> Self::Output {
-        let lhs: isize = self.into();
-        let rhs: isize = rhs.into();
-        lhs.rem_euclid(rhs).into()
+        if rhs == Word::ZERO {
+            None
+        } else {
+            let lhs: isize = self.into();
+            let rhs: isize = rhs.into();
+            Some(lhs.rem_euclid(rhs).into())
+        }
     }
 }
 
@@ -563,11 +579,11 @@ pub mod test {
         let r: isize = 18;
         let div = i.div_euclid(r);
         let rem = i.rem_euclid(r);
-        let i_tryte: Word = (-38127987).into();
-        let r_tryte: Word = 18.into();
+        let i_word: Word = (-38127987).into();
+        let r_word: Word = 18.into();
         b.iter(|| {
-            assert_eq!(div, (i_tryte / r_tryte).into());
-            assert_eq!(rem, (i_tryte % r_tryte).into());
+            assert_eq!(div, (i_word / r_word).unwrap().into());
+            assert_eq!(rem, (i_word % r_word).unwrap().into());
         });
     }
 }

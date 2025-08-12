@@ -27,3 +27,20 @@ pub const J:    [Trit; 3] = [POne, Zero, POne];
 pub const K:    [Trit; 3] = [NOne, POne, POne];
 pub const L:    [Trit; 3] = [Zero, POne, POne];
 pub const M:    [Trit; 3] = [POne, POne, POne];
+
+#[cfg(test)]
+pub mod tests {
+    use ternary::tryte::Tryte;
+
+    use crate::*;
+
+    #[test]
+    fn const_eval() {
+        let arr: Tryte = [ZERO, ZERO, ZERO].into();
+        assert_eq!(arr, Tryte::ZERO);
+        let arr: Tryte = [A, ZERO, ZERO].into();
+        assert_eq!(arr, Tryte::PONE);
+        let arr: Tryte = [N, ZERO, ZERO].into();
+        assert_eq!(arr, Tryte::NONE);
+    }
+}
