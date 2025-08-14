@@ -1,13 +1,19 @@
 #![allow(dead_code)]
 #![allow(clippy::assign_op_pattern)]
-#![feature(stmt_expr_attributes, test)]
+#![feature(ascii_char, stmt_expr_attributes, test)]
 
+#[macro_use]
+extern crate static_assertions;
+
+#[macro_use]
+extern crate approx;
 
 pub mod trits;
 pub mod tryte;
 pub mod word;
 pub mod errors;
 pub mod prelude;
+pub mod floating;
 #[cfg(feature = "const_size")]
 pub mod varsize;
 

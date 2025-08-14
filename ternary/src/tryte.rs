@@ -1,6 +1,8 @@
 use std::{
     fmt::Debug,
-    ops::{Add, Div, Mul, Neg, Rem, Shl, Shr, Sub},
+    hash::Hash,
+    ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Rem, Shl, Shr, Sub},
+    str::FromStr,
 };
 
 use crate::{
@@ -14,6 +16,12 @@ use crate::{
 #[derive(Clone, Copy)]
 pub struct Tryte(pub(crate) u32);
 
+impl Hash for Tryte {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        state.write_u32(self.num());
+    }
+}
+
 impl Debug for Tryte {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(
@@ -24,6 +32,37 @@ impl Debug for Tryte {
         )
     }
 }
+
+impl FromStr for Tryte {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() > 9 {
+            return Err(());
+        }
+        match s.as_ascii() {
+            None => Err(()),
+            Some(s) => {
+                for i in s.iter().map(|asciichar| asciichar.to_char()) {
+                    if i != 'T' && i != '0' && i != '1' {
+                        return Err(());
+                    }
+                }
+                let mut ret: [Trit; 9] = Tryte::ZERO.into();
+                for (i, char) in s.iter().map(|char| char.to_char()).rev().enumerate() {
+                    ret[i] = match char {
+                        'T' => Trit::NOne,
+                        '0' => Trit::Zero,
+                        '1' => Trit::POne,
+                        _ => unreachable!(),
+                    }
+                }
+                Ok(ret.into())
+            }
+        }
+    }
+}
+
 impl IntoIterator for Tryte {
     type Item = Trit;
 
@@ -253,6 +292,34 @@ impl Rem for Tryte {
     }
 }
 
+impl BitAnd for Tryte {
+    type Output = Tryte;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        let mut ret: [Trit; 9] = Tryte::ZERO.into();
+        let arr0: [Trit; 9] = self.into();
+        let arr1: [Trit; 9] = rhs.into();
+        for i in 0..9 {
+            ret[i] = arr0[i] & arr1[i];
+        }
+        ret.into()
+    }
+}
+
+impl BitOr for Tryte {
+    type Output = Tryte;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        let mut ret: [Trit; 9] = Tryte::ZERO.into();
+        let arr0: [Trit; 9] = self.into();
+        let arr1: [Trit; 9] = rhs.into();
+        for i in 0..9 {
+            ret[i] = arr0[i] | arr1[i];
+        }
+        ret.into()
+    }
+}
+
 impl PartialEq for Tryte {
     fn eq(&self, other: &Self) -> bool {
         self.num() == other.num()
@@ -280,6 +347,16 @@ impl Tryte {
     pub const ZERO: Tryte = Tryte(0b101010101010101010);
     pub const NONE: Tryte = Tryte(0b101010101010101001);
     pub const TWO: Tryte = Tryte(0b101010101010101101);
+    pub const MIN: Tryte = Tryte(0b010101010101010101);
+    pub const MAX: Tryte = Tryte(0b111111111111111111);
+
+    pub const fn get(&self, idx: usize) -> Option<Trit> {
+        if idx < 9 {
+            unsafe { std::mem::transmute((self.0 >> (2 * idx)) as u8 & TRIT_BIT_MASK) }
+        } else {
+            None
+        }
+    }
 
     pub const fn isize(&self) -> isize {
         let value = self.0;
@@ -527,7 +604,6 @@ pub mod test {
 
     #[test]
     fn test_shr() {
-        let val = 1;
         let tryte = Tryte::PONE << 8;
         for i in 0..9 {
             assert_eq!(tryte >> i, 3isize.pow((8 - i) as u32).into());
@@ -541,6 +617,17 @@ pub mod test {
             assert_eq!(tryte << i, 3isize.pow(i as u32).into());
         }
     }
+
+    #[test]
+    fn from_str() {
+        assert_eq!(Tryte::ZERO, "0".parse().unwrap());
+        assert_eq!(Tryte::NONE, "T".parse().unwrap());
+        assert_eq!(Tryte::PONE, "1".parse().unwrap());
+        use Trit::*;
+        let tryte: Tryte = [NOne, POne, Zero, Zero, Zero, POne, NOne, POne, Zero].into();
+        assert_eq!(tryte, "01T10001T".parse().unwrap());
+    }
+
     extern crate test;
 
     #[bench]

@@ -8,3 +8,5 @@ default = []
 const_size = []
 
 [dependencies]
+approx = "0.5.1"
+static_assertions = "1.1.0"

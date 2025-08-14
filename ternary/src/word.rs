@@ -1,4 +1,7 @@
-use std::ops::{Add, Div, Mul, Neg, Rem, Shl, Shr, Sub};
+use std::{
+    hash::Hash,
+    ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Rem, Shl, Shr, Sub}, str::FromStr,
+};
 
 use crate::{
     trits::{Trit, TritAddResult},
@@ -11,6 +14,12 @@ use crate::{
 #[derive(Debug, Clone, Copy)]
 pub struct Word(pub(crate) u64);
 
+impl Hash for Word {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        state.write_u64(self.num());
+    }
+}
+
 impl IntoIterator for Word {
     type Item = Trit;
 
@@ -19,6 +28,36 @@ impl IntoIterator for Word {
     fn into_iter(self) -> Self::IntoIter {
         let ret: [Trit; 27] = self.into();
         ret.into_iter()
+    }
+}
+
+impl FromStr for Word {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() > 27 {
+            return Err(());
+        }
+        match s.as_ascii() {
+            None => Err(()),
+            Some(s) => {
+                for i in s.iter().map(|asciichar| asciichar.to_char()) {
+                    if i != 'T' && i != '0' && i != '1' {
+                        return Err(());
+                    }
+                }
+                let mut ret: [Trit; 27] = Word::ZERO.into();
+                for (i, char) in s.iter().map(|char| char.to_char()).rev().enumerate() {
+                    ret[i] = match char {
+                        'T' => Trit::NOne,
+                        '0' => Trit::Zero,
+                        '1' => Trit::POne,
+                        _ => unreachable!(),
+                    }
+                }
+                Ok(ret.into())
+            }
+        }
     }
 }
 
@@ -49,6 +88,16 @@ impl From<[Tryte; 3]> for Word {
                 })
                 .fold(0, std::ops::BitOr::bitor),
         )
+    }
+}
+
+impl From<Word> for [Tryte; 3] {
+    fn from(value: Word) -> Self {
+        let mut zero = [Tryte::ZERO; 3];
+        zero[0] = Tryte((value.0 as u32) & TRYTE_BIT_MASK);
+        zero[1] = Tryte(((value.0 >> 18 )as u32) & TRYTE_BIT_MASK);
+        zero[2] = Tryte(((value.0 >> 36) as u32) & TRYTE_BIT_MASK);
+        zero
     }
 }
 
@@ -295,6 +344,34 @@ impl Rem for Word {
     }
 }
 
+impl BitAnd for Word {
+    type Output = Word;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        let mut ret: [Trit; 27] = Word::ZERO.into();
+        let arr0: [Trit; 27] = self.into();
+        let arr1: [Trit; 27] = rhs.into();
+        for i in 0..27 {
+            ret[i] = arr0[i] & arr1[i];
+        }
+        ret.into()
+    }
+}
+
+impl BitOr for Word {
+    type Output = Word;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        let mut ret: [Trit; 27] = Word::ZERO.into();
+        let arr0: [Trit; 27] = self.into();
+        let arr1: [Trit; 27] = rhs.into();
+        for i in 0..27 {
+            ret[i] = arr0[i] | arr1[i];
+        }
+        ret.into()
+    }
+}
+
 impl PartialEq for Word {
     fn eq(&self, other: &Self) -> bool {
         self.num() == other.num()
@@ -322,6 +399,16 @@ impl Word {
     pub const ZERO: Word = Word(0b101010101010101010101010101010101010101010101010101010);
     pub const NONE: Word = Word(0b101010101010101010101010101010101010101010101010101001);
     pub const TWO: Word = Word(0b101010101010101010101010101010101010101010101010101101);
+    pub const MIN: Word = Word(0b010101010101010101010101010101010101010101010101010101);
+    pub const MAX: Word = Word(0b111111111111111111111111111111111111111111111111111111);
+
+    pub const fn get(&self, idx: usize) -> Option<Trit> {
+        if idx < 27 {
+            unsafe { std::mem::transmute((self.0 >> (2 * idx)) as u8 & TRIT_BIT_MASK) }
+        } else {
+            None
+        }
+    }
 
     pub fn pow_isize(lhs: Word, rhs: isize) -> Word {
         if rhs < 0 {
