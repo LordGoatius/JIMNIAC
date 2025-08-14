@@ -1,4 +1,4 @@
-use std::ops::{Add, BitAnd, BitOr, Mul, Neg, Not};
+use std::{fmt::Display, ops::{Add, BitAnd, BitOr, Mul, Neg, Not}};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
 #[repr(u8)]
@@ -23,6 +23,17 @@ impl From<Trit> for char {
 pub struct TritAddResult {
     pub carry: Trit,
     pub result: Trit,
+}
+
+impl Display for Trit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let char = match self {
+            Trit::NOne => "T",
+            Trit::Zero => "0",
+            Trit::POne => "1",
+        };
+        write!(f, "{}", char)
+    }
 }
 
 impl BitAnd<Trit> for Trit {
@@ -109,6 +120,14 @@ impl Mul<Trit> for Trit {
 }
 
 impl Trit {
+    pub(crate) fn to_char(self) -> char {
+        match self {
+            Trit::NOne => 'T',
+            Trit::Zero => '0',
+            Trit::POne => '1',
+        }
+    }
+
     fn tritwise_add(self, rhs: Trit) -> Trit {
         match self {
             Trit::Zero => rhs,
@@ -228,7 +247,8 @@ pub mod test {
 
         let thing_0 = p_one + p_one + p_one;
         let thing_1 = n_one + zero  + n_one;
-        println!("{:?}", thing_0);
-        println!("{:?}", thing_1);
+        assert_eq!(TritAddResult { carry: Trit::POne, result: Trit::Zero }, thing_0);
+        assert_eq!(TritAddResult { carry: Trit::NOne, result: Trit::POne }, thing_1);
+
     }
 }

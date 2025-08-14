@@ -1,3 +1,5 @@
+use std::ops::Neg;
+
 use crate::{trits::Trit, word::Word, WORD_LEN};
 
 /// The fundamental ternary floating point type.
@@ -22,7 +24,8 @@ use crate::{trits::Trit, word::Word, WORD_LEN};
 #[repr(transparent)]
 pub struct Floating(Word);
 
-const EXPONENT_SIZE: u64 = 6;
+const VAR_NAME: u64 = 6;
+const EXPONENT_SIZE: u64 = VAR_NAME;
 const MANTISSA_SIZE: u64 = WORD_LEN as u64 - EXPONENT_SIZE;
 const EXPONENT: u64 = (1 << (EXPONENT_SIZE * 2)) - 1;
 const MANTISSA: u64 = (1 << (MANTISSA_SIZE * 2)) - 1;
@@ -45,11 +48,11 @@ impl From<Floating> for (Mantissa, Exponent) {
         let arr: [Trit; 27] = value.0.into();
         let mut mantissa: [Trit; 27] = Word::ZERO.into();
         let mut exponent: [Trit; 27] = Word::ZERO.into();
-        for (i, idx) in (0..(MANTISSA_SIZE as usize)).rev().enumerate() {
-            mantissa[i] = arr[idx];
+        for i in 0..(MANTISSA_SIZE as usize) {
+            mantissa[i] = arr[i];
         }
-        for (i, idx) in (0..(EXPONENT_SIZE as usize)).rev().enumerate() {
-            exponent[i] = arr[idx + MANTISSA_SIZE as usize];
+        for i in 0..(EXPONENT_SIZE as usize) {
+            exponent[i] = arr[i + MANTISSA_SIZE as usize];
         }
         (Mantissa(mantissa.into()), Exponent(exponent.into()))
         /*
@@ -113,6 +116,24 @@ impl From<Floating> for f64 {
     }
 }
 
+impl Neg for Mantissa {
+    type Output = Mantissa;
+
+    fn neg(self) -> Self::Output {
+        Mantissa(-self.0)
+    }
+}
+
+impl Neg for Floating {
+    type Output = Floating;
+
+    fn neg(self) -> Self::Output {
+        let (mantissa, exponent): (Mantissa, Exponent) = self.into();
+        let mantissa = -mantissa;
+        (mantissa, exponent).into()
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use crate::{
@@ -156,6 +177,13 @@ pub mod tests {
         let floating: Floating = (Mantissa(mantissa), Exponent(exponent)).into();
         let double: f64 = floating.into();
         assert_relative_eq!(double, -1.0 / 27.0, epsilon = f64::EPSILON);
+
+        let mantissa: Word = (-1).into();
+        let exponent: Word = (-3).into();
+        let floating: Floating = (Mantissa(mantissa), Exponent(exponent)).into();
+        let floating: Floating = -floating;
+        let double: f64 = floating.into();
+        assert_relative_eq!(double, 1.0 / 27.0, epsilon = f64::EPSILON);
 
         let mantissa: Word = "1TTT0110T000T111T11001".parse().unwrap();
         let exponent: Word = (1).into();

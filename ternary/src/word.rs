@@ -1,6 +1,5 @@
 use std::{
-    hash::Hash,
-    ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Rem, Shl, Shr, Sub}, str::FromStr,
+    fmt::Display, hash::Hash, ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Rem, Shl, Shr, Sub}, str::FromStr
 };
 
 use crate::{
@@ -28,6 +27,12 @@ impl IntoIterator for Word {
     fn into_iter(self) -> Self::IntoIter {
         let ret: [Trit; 27] = self.into();
         ret.into_iter()
+    }
+}
+
+impl Display for Word {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.into_iter().map(Trit::to_char).rev().collect::<String>())
     }
 }
 
