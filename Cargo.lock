@@ -5,6 +5,9 @@ version = 4
 [[package]]
 name = "JX_01"
 version = "0.1.0"
+dependencies = [
+ "ternary",
+]
 
 [[package]]
 name = "approx"

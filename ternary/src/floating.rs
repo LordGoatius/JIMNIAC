@@ -310,12 +310,23 @@ impl Mul for Floating {
     type Output = Floating;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        // Multiply mantissa, add exponents, an normalize
+        // Multiply mantissa, add exponents, and normalize
         let (mantissa_0, exponent_0) = self.into();
         let (mantissa_1, exponent_1) = rhs.into();
 
         eprintln!("m0 {}", mantissa_0.0);
         eprintln!("m1 {}", mantissa_1.0);
+
+        let mantissa_0 = mantissa_0.0 >> 13;
+        let mantissa_1 = mantissa_1.0 >> 13;
+
+        let (exponent_0, exponent_1) = if exponent_1.0 > exponent_0.0 {
+            (exponent_0.0 >> 1, exponent_1)
+        } else {
+            
+            (exponent_0, exponent_1.0 >> 1)
+        };
+
         // This doesn't work really. I need to find out exactly how to know
         // how much to shift each one right until it doesn't overflow
         let trailing_0 = mantissa_0.trailing_zeroes();
