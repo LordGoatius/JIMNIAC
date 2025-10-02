@@ -4,7 +4,7 @@
 //! Virtual Address: ___________________________
 //!                  xx\    /\    /\    /|     |
 //!                      3     2     1    Offset
-//! xx: Metadata Trit
+//! xx: Metadata Trits
 //! n: n-level index
 //! offset: tryte offset into page
 
@@ -13,12 +13,12 @@ use std::collections::HashMap;
 use ternary::word::Word;
 
 const PAGE_TABLE_SIZE: usize = 729;
-const WORDS_PER_TABLE: usize = PAGE_TABLE_SIZE * 3;
+const TRYTES_PER_TABLE: usize = PAGE_TABLE_SIZE * 3;
 
 type Address = Word;
 
 struct MMU {
-    tlb: [(Address, Address); PAGE_TABLE_SIZE]
+    tlb: [(Address, Option<Address>); PAGE_TABLE_SIZE]
 }
 
 struct Memory<'a> {
@@ -30,4 +30,4 @@ struct Memory<'a> {
     memory: HashMap<Address, Page>
 }
 
-type Page = [Word; WORDS_PER_TABLE];
+type Page = [Word; PAGE_TABLE_SIZE];

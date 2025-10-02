@@ -1,0 +1,71 @@
+┌───────────────────────────────────────────────────────────────┐  ┌────────────────┬───────┬────────┬─────────┐ ┌────────────────────────────────────────┐ ┌────────────────────────────────┐
+│                                                               │  │ CPU SPECIFIC:  │ ALU:  │ STACK: │ BRANCH: │ │                  GPU                   │ │           INTERRUPTS           │
+│                                                               │  ├────────────────┼───────┼────────┼─────────┤ ├────────────────────────────────────────┤ ├────────────────────────────────┤
+│                                                               │  │ hlt:           │ add   │ push   │ cmp     │ │ egel: enable gpu event loop            │ │ A PIC will manage interrupts.  │
+│                                                               │  │   halt         │       │        │         │ │ lvb: load vector buffer                │ │ This will be a message queue.  │
+│                                                               │  │ int:           │ sub   │ pop    │ beq     │ │                                        │ │                                │
+│                                                               │  │   interrupt    │       │        │         │ │ The gpu functions with a GPU structure │ │ Any IO interrupts will be add- │
+│                                                               │  │ dti:           │ mul   │ call   │ bne     │ │ which handles internal GPU state. This │ │ ed to the message queue.       │
+│                                                               │  │    disable int │       │        │         │ │ is loaded with the `egpu` instruction. │ │ Higher priority interrupts wi- │
+│                                                               │  │ sti:           │ eqot  │ ret    │ bgt     │ │                                        │ │ ll be added to a higher prior- │
+│                                                               │  │   enable int   │       │        │         │ │ The gpu structure contains:            │ │ ity queue.                     │
+│                                                               │  │ wfi:           │ erem  ├────────┤ blt     │ │ - Vector Buffer                        │ │                                │
+│                                                               │  │   wait for int │       │ MEM:   │         │ │ - Vector Buffer Size                   │ │ It is configured using interr- │
+│                    JX-01: A Mixed-Purpose                     │  │ rti:           │ and   ├────────┤ blq     │ │ - Event Loop Callback                  │ │ upt masking.                   │
+│                         Ternary ISA                           │  │   return int   │       │        │         │ │ - State Register                       │ │                                │
+│                                                               │  │ lit:           │ or    │ load   │ bgq     │ │                                        │ │ intm: masks interrupt          │
+│                           Author:                             │  │   loads idt    │       │        │         │ │ These are stored in memory registers   │ │ inte: enables interrupt        │
+│                        Jimmy Ostler                           │  │ egpu:          │ shft  │ store  │ bpz     │ │ read every GPU event loop.             │ │ ints: switches interrupt       │
+│                   jtostler@willamette.edu                     │  │   enable gpu   │       │        │         │ │                                        │ │                                │
+│                      jtostler1@gmail.com                      │  │ lptb:          │ not   │        │ bpp     │ │                                        │ │ Supported Interrupts:          │
+│                                                               │  │   load pg tbl  │       │        │         │ │                                        │ │ (interrupts will be indexed    │
+│                                                               │  │ pcsr:          │ rot   │        │ bpn     │ │                                        │ │ using a tryte, making 19681    │
+│                                                               │  │   push csr     │       │        │         │ │                                        │ │ possible interrupts)           │
+│                                                               │  │ ppsr:          │       │        │         │ │                                        │ │                                │
+│                                                               │  │   push psr     │       │        │         │ │                                        │ │ 0 => Timer                     │
+│                                                               │  │ pptr:          │       │        │         │ │                                        │ │ 1 => Keyboard                  │
+│                                                               │  │   push ptr     │       │        │         │ │                                        │ │ 2 => Disk                      │
+│                                                               │  └────────────────┴───────┴────────┴─────────┘ └────────────────────────────────────────┘ │ 3 => GPU                       │
+│                                                               │   27 GP REG: 27 trit and 9 trit   Branching is based on the parity flag                   │                                │
+│                                                               │   Instructions specify what size  or the sign flag.                                       ├────────────────────────────────┤
+│                                                               │   tn13-t13 09 trit                                                                        │               IO               │
+│                                                               │   rn13-r13 27 trit                There also exist non-general purpose registers          ├────────────────────────────────┤
+│                                                               │   The zero register always reads  the csr, psr, and ptr (cpu status, program status,      │ IO is primarily using ports.   │
+│                                                               │   0, regardless of writes         and page table register)                                │ Hardware configuration can     │
+│                                                               │                                                                                           │ add interrupts for avaiable    │
+│                                                               │   Each ALU instruction has a control tribble:                                             │ peripherials.                  │
+│                                                               │   This is a 3-trit digit that specifies how it is used                                    │                                │
+│                                                               │   This controls:                                                                          │ in: reads port into register   │
+│                                                               │   - Register Size                                                                         │ out: outputs value             │
+│                                                               │   - RR or RI (akin to addressing mode)                                                    │                                │
+│                                                               │   - Instruction Type                                                                      │ MMIO can be accessed through   │
+│                                                               │                                                                                           │ hardware configuration.        │
+│                                                               │                                                                                           │ (Writing rust code in the VM)  │
+│                                                               │   MMU and Page Tabling:                                                                   │                                │
+│                                                               │   Memory starts out as identity mapped. Once the MMU is enabled, this changes, and        │                                │
+│                                                               │   all addresses go through the TLB and traversing the page table. A virtual address       │                                │
+│                                                               │   contains 3 index levels (6 trits each), and 1 page index (7 trits). A page contains     │                                │
+│                               01                              │   729 words (2187 trytes).                  1T                                            │               10               │
+└───────────────────────────────────────────────────────────────┘                                                                                           └────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐ ┌──────────────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────┐
+│                   Virtual Memory Addressing                   │ │                  Septivigntimal                  │                       Machine Code / Opcodes                          │
+├───────────────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+│ Virtual Address: ___________________________                  │ │ There exists a need for an alternative to hexad- │ CPU Specific Start with T00 (V), Stack / Branch / ALU with 0          │
+│                  xx\    /\    /\    /|     |                  │ │ ecimal. Several people have tried, none succeed- │ [C]: Control Tribble [I]: Instr                                       │
+│                      3     2     1    Offset                  │ │ d to my satisfaction. I propose the following:   │ [R]: Register                    Load               Branch            │
+│ xx: Metadata Trits                                            │ │                                                  │                                  [R] = *imm         [PC] = [R] + imm  │
+│ n: n-level index (6 trits)                                    │ │   -13 -12 -11 -10 -9 -8 -7 -6 -5 -4 -3 -2 -1     │ ALU:-[C][I]-[R][imm @ 3-8]       [R] = *([R] + imm) [PC] = [R] +      │
+│ offset: tryte offset into page (7 trits)                      │ │     Z   Y   X   W  V  U  T  S  R  Q  P  O  N     │            \[R][R][imm @ 4-8]                              [R] * imm  │
+│                                                               │ │                                                  │                                  Store              Cmp               │
+│ Page table traversal is hardware managed, but still contains  │ │    13  12  11  10  9  8  7  6  5  4  3  2  1     │ Stack Ops:      ALU Ops          *imm = [R]         [R] ~ imm         │
+│ CPU faults (int 4) for page table errors. Modifying the page  │ │     M   L   K   J  I  H  G  F  E  D  C  B  A     │ [R] + imm       [R] = [R] op imm *([R] + imm) = [R] [R] ~ [R] + imm   │
+│ table must be done in software in the global kernel allocator │ │                                                  │ [R] + [R] * imm [R] = [R] op imm                                      │
+│                                                               │ │  And 0 remains 0. Notably, the only number is 0. │                                                                       │
+│ Metadata represents whether the PTE is in use or not, as well │ │  This is on purpose, since 26 letters + 0 is the │ int: VII [int] x..  egpu: VG0 [dgpu]  intm: VIM [int] x..             │
+│ as where it is stored.                                        │ │  only satisfacory arragement for me. It needed   │ dti: VD0 x..        lvb:  VL[R] imm.. inte: VIE [int] x..             │
+│                                                               │ │  to: 1) Increase logically from 0 (a->b). 2) It  │ sti: VS0 x..        egel: VX[R] x..   ints: VIS [int] x..             │
+│ x1: T: Not in Use 0: Use by kernel 1: Use in userspace        │ │  needed to split the alphabet logically. 3) It   │ wfi: VW0 x..        pcsr: VC0 x..     in:   VQ[R] [port] x..          │
+│ x2: T: Stored in TLB 0: Stored in memory 1: Stored on Disk    │ │  must include every letter and 0. I believe this │ rti: VR0 x..        ppsr: VD0 x..     out:  VV[R] [port] x..          │
+│                                                               │ │  is the best solution.                           │ hlt: VM0 x..        pptr: VE0 x..                                     │
+│                               11                              │ │                        1TT                       │ lpt:  VP[R] x..                 1T0                                   │
+└───────────────────────────────────────────────────────────────┘ └──────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────┘
