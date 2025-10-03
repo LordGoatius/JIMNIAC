@@ -1,32 +1,34 @@
 use ternary::trits::Trit::{self, *};
 
-pub const Z:    [Trit; 3] = [NOne, NOne, NOne];
-pub const Y:    [Trit; 3] = [Zero, NOne, NOne];
-pub const X:    [Trit; 3] = [POne, NOne, NOne];
-pub const W:    [Trit; 3] = [NOne, Zero, NOne];
-pub const V:    [Trit; 3] = [Zero, Zero, NOne];
-pub const U:    [Trit; 3] = [POne, Zero, NOne];
-pub const T:    [Trit; 3] = [NOne, POne, NOne];
-pub const S:    [Trit; 3] = [Zero, POne, NOne];
-pub const R:    [Trit; 3] = [POne, POne, NOne];
-pub const Q:    [Trit; 3] = [NOne, NOne, Zero];
-pub const P:    [Trit; 3] = [Zero, NOne, Zero];
-pub const O:    [Trit; 3] = [POne, NOne, Zero];
-pub const N:    [Trit; 3] = [NOne, Zero, Zero];
-pub const ZERO: [Trit; 3] = [Zero, Zero, Zero];
-pub const A:    [Trit; 3] = [POne, Zero, Zero];
-pub const B:    [Trit; 3] = [NOne, POne, Zero];
-pub const C:    [Trit; 3] = [Zero, POne, Zero];
-pub const D:    [Trit; 3] = [POne, POne, Zero];
-pub const E:    [Trit; 3] = [NOne, NOne, POne];
-pub const F:    [Trit; 3] = [Zero, NOne, POne];
-pub const G:    [Trit; 3] = [POne, NOne, POne];
-pub const H:    [Trit; 3] = [NOne, Zero, POne];
-pub const I:    [Trit; 3] = [Zero, Zero, POne];
-pub const J:    [Trit; 3] = [POne, Zero, POne];
-pub const K:    [Trit; 3] = [NOne, POne, POne];
-pub const L:    [Trit; 3] = [Zero, POne, POne];
-pub const M:    [Trit; 3] = [POne, POne, POne];
+pub type Tribble = [Trit; 3];
+
+pub const Z:    Tribble = [NOne, NOne, NOne];
+pub const Y:    Tribble = [Zero, NOne, NOne];
+pub const X:    Tribble = [POne, NOne, NOne];
+pub const W:    Tribble = [NOne, Zero, NOne];
+pub const V:    Tribble = [Zero, Zero, NOne];
+pub const U:    Tribble = [POne, Zero, NOne];
+pub const T:    Tribble = [NOne, POne, NOne];
+pub const S:    Tribble = [Zero, POne, NOne];
+pub const R:    Tribble = [POne, POne, NOne];
+pub const Q:    Tribble = [NOne, NOne, Zero];
+pub const P:    Tribble = [Zero, NOne, Zero];
+pub const O:    Tribble = [POne, NOne, Zero];
+pub const N:    Tribble = [NOne, Zero, Zero];
+pub const ZERO: Tribble = [Zero, Zero, Zero];
+pub const A:    Tribble = [POne, Zero, Zero];
+pub const B:    Tribble = [NOne, POne, Zero];
+pub const C:    Tribble = [Zero, POne, Zero];
+pub const D:    Tribble = [POne, POne, Zero];
+pub const E:    Tribble = [NOne, NOne, POne];
+pub const F:    Tribble = [Zero, NOne, POne];
+pub const G:    Tribble = [POne, NOne, POne];
+pub const H:    Tribble = [NOne, Zero, POne];
+pub const I:    Tribble = [Zero, Zero, POne];
+pub const J:    Tribble = [POne, Zero, POne];
+pub const K:    Tribble = [NOne, POne, POne];
+pub const L:    Tribble = [Zero, POne, POne];
+pub const M:    Tribble = [POne, POne, POne];
 
 #[cfg(test)]
 pub mod tests {

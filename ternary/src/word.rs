@@ -166,6 +166,15 @@ impl From<Word> for [Trit; 27] {
     }
 }
 
+impl From<Word> for [[Trit; 3]; 9] {
+    fn from(value: Word) -> Self {
+        let value: [Trit; 27] = value.into();
+        unsafe {
+            std::mem::transmute(value)
+        }
+    }
+}
+
 impl From<Word> for isize {
     fn from(value: Word) -> Self {
         let arr: [Trit; 27] = value.into();

@@ -121,6 +121,15 @@ impl From<Tryte> for [Trit; 9] {
     }
 }
 
+impl From<Tryte> for [[Trit; 3]; 3] {
+    fn from(value: Tryte) -> Self {
+        let value: [Trit; 9] = value.into();
+        unsafe {
+            std::mem::transmute(value)
+        }
+    }
+}
+
 impl From<Word> for Tryte {
     fn from(value: Word) -> Self {
         Tryte(value.0 as u32 & TRYTE_BIT_MASK)

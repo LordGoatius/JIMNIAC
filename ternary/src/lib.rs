@@ -13,7 +13,7 @@ pub mod tryte;
 pub mod word;
 pub mod errors;
 pub mod prelude;
-pub mod floating;
+// pub mod floating;
 #[cfg(feature = "const_size")]
 pub mod varsize;
 
