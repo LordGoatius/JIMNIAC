@@ -358,6 +358,7 @@ impl Tryte {
     pub const TWO: Tryte = Tryte(0b101010101010101101);
     pub const MIN: Tryte = Tryte(0b010101010101010101);
     pub const MAX: Tryte = Tryte(0b111111111111111111);
+    pub const TRYTE_SIZE: usize = 3usize.pow(9);
 
     pub const fn get(&self, idx: usize) -> Option<Trit> {
         if idx < 9 {
