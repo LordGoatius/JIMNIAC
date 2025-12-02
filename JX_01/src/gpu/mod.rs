@@ -56,8 +56,8 @@ impl Gpu {
     /// The size of `coord_one` and `coord_two` must be 12.
     /// I may let the next 3 trits in the draw word to change color, but for now this works.
     /// I may need them to specify circle arc instead of line though, and I like green.
-    unsafe fn draw_line(&mut self, coord_one: &[Trit], coord_two: &[Trit]) {
-        self.canvas.set_draw_color(Color::GREEN);
+    unsafe fn draw_line(&mut self, coord_one: &[Trit], coord_two: &[Trit], color: Color) {
+        self.canvas.set_draw_color(color);
 
         // x and y will in [-364, 364]. We need to add 364 to get a proper coordinate
         let x_1 = (coord_one.iter().enumerate().take(6).fold(0isize, |acc, (i, trit)| {
@@ -98,13 +98,34 @@ impl Gpu {
         // [-364, 364] x [-364, 364]
         self.canvas.draw_line((x_1, 729.0 - y_1), (x_2, 729.0 - y_2)).unwrap();
     }
+
+    fn draw(&mut self, word: Word) {
+        let coord: [Trit; 27] = word.into();
+        // of size 3
+        let color: &[Trit] = &coord[(27 - 3)..];
+        let trit_to_color = |t: Trit| {
+            match t {
+                Trit::NOne => 0,
+                Trit::Zero => const { u8::MAX / 2 },
+                Trit::POne => u8::MAX,
+            }
+        };
+        let r = trit_to_color(color[0]);
+        let g = trit_to_color(color[1]);
+        let b = trit_to_color(color[2]);
+
+        let color = Color::RGB(r, g, b);
+        unsafe {
+            self.draw_line(&coord[0..12], &coord[12..24], color);
+        }
+    }
 }
 
 #[cfg(test)]
 pub mod tests {
     use std::time::Duration;
 
-    use sdl3::{event::Event, keyboard::Keycode};
+    use sdl3::{event::Event, keyboard::Keycode, pixels::Color};
     use ternary::{trits::Trit, word::Word};
 
     use crate::gpu::Gpu;
@@ -137,10 +158,17 @@ pub mod tests {
         let zero: [Trit; 27] = Word::ZERO.into();
         let coord_two: [Trit; 27] = Word::MIN.into();
 
-        unsafe {
-            gpu.draw_line(&coord_one[0..12], &zero[0..12]);
-            gpu.draw_line(&zero[0..12], &coord_two[0..12]);
-        }
+        let coord: Word = {
+            use Trit::*;
+            [POne, POne, POne, POne, POne, POne, POne, POne, POne, POne, POne, POne,
+             NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne,
+             POne, Zero, Zero
+            ].into()
+        };
+
+        gpu.draw(coord);
+        // gpu.draw_line(&coord_one[0..12], &zero[0..12], Color::GREEN);
+        // gpu.draw_line(&zero[0..12], &coord_two[0..12], Color::GREEN);
 
         gpu.canvas.present();
 
@@ -148,6 +176,7 @@ pub mod tests {
             for event in gpu.sdl.event_pump().unwrap().poll_iter() {
                 match event {
                     Event::Quit { .. }
+                    | Event::AppTerminating { .. }
                     | Event::KeyDown {
                         keycode: Some(Keycode::Escape | Keycode::Q),
                         ..
