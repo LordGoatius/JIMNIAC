@@ -148,6 +148,7 @@ impl<'a> JX_01<'a> {
             CMP => {
                 let res = reg1 - reg2;
                 // set sign, parity, and carry
+
                 ip = self.status.ip + (Word::PONE << 1);
             }
             STRE => {

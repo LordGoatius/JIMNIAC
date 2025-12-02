@@ -120,6 +120,12 @@ impl Mul<Trit> for Trit {
 }
 
 impl Trit {
+    pub const TRIT_BIT_MASK: u8 = 0b11;
+    pub unsafe fn from_num(num: u8) -> Trit {
+        unsafe {
+            std::mem::transmute(num)
+        }
+    }
     pub(crate) fn to_char(self) -> char {
         match self {
             Trit::NOne => 'T',

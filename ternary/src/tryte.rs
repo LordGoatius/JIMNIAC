@@ -358,7 +358,14 @@ impl Tryte {
     pub const TWO: Tryte = Tryte(0b101010101010101101);
     pub const MIN: Tryte = Tryte(0b010101010101010101);
     pub const MAX: Tryte = Tryte(0b111111111111111111);
+    pub const TRYTE_BIT_MASK: u32 = 0b111111111111111111;
     pub const TRYTE_SIZE: usize = 3usize.pow(9);
+
+    pub unsafe fn from_num(num: u32) -> Tryte {
+        unsafe {
+            std::mem::transmute(num)
+        }
+    }
 
     pub const fn get(&self, idx: usize) -> Option<Trit> {
         if idx < 9 {
