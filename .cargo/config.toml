@@ -1,6 +1,7 @@
 [build]
 # rustflags = ["-Zpolonius"]
 # rustflags = ["-Zpolonius", "-C", "link-arg=-fuse-ld=mold"]
+rustflags = ["-Zthreads=20"]
 target-dir = ".target"
 
 [unstable]

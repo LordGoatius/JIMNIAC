@@ -3,11 +3,14 @@ use ternary::{trits::Trit, tryte::Tryte, word::Word};
 
 use crate::isa::registers::Register;
 
+pub use code::{encode, decode};
+
 pub mod code;
 pub mod registers;
 
-type Control = Tribble;
-type Op = Tribble;
+pub type Control = Tribble;
+pub type Op = Tribble;
+pub type Opt = u32;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Instr {
@@ -58,29 +61,38 @@ const ALU_CTRL_R_RI: Control = [Trit::Zero, Trit::POne, Trit::Zero];
 const CALL_CTRL_R: Control = [Trit::Zero, Trit::POne, Trit::Zero];
 const CALL_CTRL_T: Control = [Trit::Zero, Trit::NOne, Trit::Zero];
 
-pub const BPN: Op = Z;
-pub const BPP: Op = Y;
-pub const BPZ: Op = X;
-pub const BGQ: Op = W;
-pub const BLQ: Op = V;
-pub const BLT: Op = U;
-pub const BGT: Op = T;
-pub const BNE: Op = S;
-pub const BEQ: Op = R;
-pub const CMP: Op = Q;
-pub const STRE: Op = P;
-pub const LOAD: Op = O;
-pub const ADD: Op = A;
-pub const SUB: Op = B;
-pub const MUL: Op = C;
-pub const QOT: Op = D;
-pub const REM: Op = E;
-pub const AND: Op = F;
-pub const OR: Op = G;
-pub const SFT: Op = H;
-pub const NOT: Op = I;
-pub const ROT: Op = J;
-pub const PUSH: Op = K;
-pub const POP: Op = L;
-pub const CALL: Op = M;
-pub const RET: Op = N;
+pub const fn op_to_opt(op: Op) -> Opt {
+    let mut opt: u32 = 0;
+    opt |= (op[0] as u8) as u32 ;
+    opt |= ((op[1] as u8) << 2) as u32 ;
+    opt |= ((op[2] as u8) << 4) as u32 ;
+
+    opt
+}
+
+pub const BPN: Opt = op_to_opt(Z);
+pub const BPP: Opt = op_to_opt(Y);
+pub const BPZ: Opt = op_to_opt(X);
+pub const BGQ: Opt = op_to_opt(W);
+pub const BLQ: Opt = op_to_opt(V);
+pub const BLT: Opt = op_to_opt(U);
+pub const BGT: Opt = op_to_opt(T);
+pub const BNE: Opt = op_to_opt(S);
+pub const BEQ: Opt = op_to_opt(R);
+pub const CMP: Opt = op_to_opt(Q);
+pub const STRE: Opt = op_to_opt(P);
+pub const LOAD: Opt = op_to_opt(O);
+pub const ADD: Opt = op_to_opt(A);
+pub const SUB: Opt = op_to_opt(B);
+pub const MUL: Opt = op_to_opt(C);
+pub const QOT: Opt = op_to_opt(D);
+pub const REM: Opt = op_to_opt(E);
+pub const AND: Opt = op_to_opt(F);
+pub const OR: Opt = op_to_opt(G);
+pub const SFT: Opt = op_to_opt(H);
+pub const NOT: Opt = op_to_opt(I);
+pub const ROT: Opt = op_to_opt(J);
+pub const PUSH: Opt = op_to_opt(K);
+pub const POP: Opt = op_to_opt(L);
+pub const CALL: Opt = op_to_opt(M);
+pub const RET: Opt = op_to_opt(N);

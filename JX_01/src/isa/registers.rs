@@ -4,9 +4,11 @@ pub use septivigntimal::*;
 
 /// POne is 27 trit, NOne is 9 trit
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct Register(pub [Trit; 3]);
+pub struct Register(pub Tribble);
+
+/// NOne is t9, POne is t27
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct RegisterSized(pub Trit, pub [Trit; 3]);
+pub struct RegisterSized(pub Trit, pub Tribble);
 
 pub const R13:  RegisterSized = RegisterSized(POne, M);
 pub const R12:  RegisterSized = RegisterSized(POne, L);

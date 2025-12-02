@@ -1,3 +1,4 @@
+#![allow(nonstandard_style)]
 pub mod memory;
 pub mod isa;
 pub mod gpu;

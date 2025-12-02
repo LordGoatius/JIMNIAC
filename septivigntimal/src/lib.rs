@@ -30,8 +30,15 @@ pub const K:    Tribble = [NOne, POne, POne];
 pub const L:    Tribble = [Zero, POne, POne];
 pub const M:    Tribble = [POne, POne, POne];
 
-pub fn to_num(t: Tribble) -> isize {
-    let t: [isize; 3] = t.map(<Trit as Into<isize>>::into);
+pub const fn to_num(t: Tribble) -> isize {
+    const fn frm(t: Tribble, i: usize) -> isize {
+        match t[i] {
+            NOne => -1,
+            Zero => 0,
+            POne => 1,
+        }
+    }
+    let t: [isize; 3] = [frm(t, 0), frm(t, 1), frm(t, 2)];
     t[0] + 3 * t[1] + 9 * t[2]
 }
 

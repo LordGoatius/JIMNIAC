@@ -1,5 +1,8 @@
 use std::{
-    fmt::Display, hash::Hash, ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Rem, Shl, Shr, Sub}, str::FromStr
+    fmt::Display,
+    hash::Hash,
+    ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Rem, Shl, Shr, Sub},
+    str::FromStr,
 };
 
 use crate::{
@@ -12,6 +15,12 @@ use crate::{
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy)]
 pub struct Word(pub(crate) u64);
+
+impl Default for Word {
+    fn default() -> Self {
+        Word::ZERO
+    }
+}
 
 impl Hash for Word {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
@@ -32,7 +41,13 @@ impl IntoIterator for Word {
 
 impl Display for Word {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.into_iter().map(Trit::to_char).rev().collect::<String>())
+        f.write_str(
+            &self
+                .into_iter()
+                .map(Trit::to_char)
+                .rev()
+                .collect::<String>(),
+        )
     }
 }
 
@@ -100,7 +115,7 @@ impl From<Word> for [Tryte; 3] {
     fn from(value: Word) -> Self {
         let mut zero = [Tryte::ZERO; 3];
         zero[0] = Tryte((value.0 as u32) & TRYTE_BIT_MASK);
-        zero[1] = Tryte(((value.0 >> 18 )as u32) & TRYTE_BIT_MASK);
+        zero[1] = Tryte(((value.0 >> 18) as u32) & TRYTE_BIT_MASK);
         zero[2] = Tryte(((value.0 >> 36) as u32) & TRYTE_BIT_MASK);
         zero
     }
@@ -169,9 +184,7 @@ impl From<Word> for [Trit; 27] {
 impl From<Word> for [[Trit; 3]; 9] {
     fn from(value: Word) -> Self {
         let value: [Trit; 27] = value.into();
-        unsafe {
-            std::mem::transmute(value)
-        }
+        unsafe { std::mem::transmute(value) }
     }
 }
 
