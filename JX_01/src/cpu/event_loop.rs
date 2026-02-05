@@ -171,6 +171,13 @@ impl<'a> JX_01<'a> {
                 ip = self.status.ip + (Word::PONE << 1);
             }
             ADD => {
+                //  ALU:-[C][I]-[R][imm @ 3-8]
+                //             \[R][R][imm @ 4-8]
+                //  ALU Ops         
+                //  [R] = [R] op ([R] + imm)
+                //  [R] = [R] op imm
+                let val = reg1_val + (reg2_val + imm);
+                self.registers.set_word(reg1, val);
                 ip = self.status.ip + (Word::PONE << 1);
             }
             SUB => {
