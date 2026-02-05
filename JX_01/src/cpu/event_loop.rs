@@ -68,7 +68,7 @@ impl<'a> JX_01<'a> {
     ///  [R] + imm       [R] = [R] op imm *([R] + imm) = [R] [R] ~ [R] + imm
     ///  [R] + [R] * imm [R] = [R] op imm
     fn execute_rr_op(&mut self, op: Op, ctrl: Control, reg1: Register, reg2: Register, imm: Word) {
-        let (reg1, reg2) = match ctrl[1] {
+        let (reg1_val, reg2_val) = match ctrl[1] {
             Trit::NOne => (self.registers.get_tryte(reg1).into(), self.registers.get_tryte(reg2).into()),
             Trit::POne => (self.registers.get_word(reg1), self.registers.get_word(reg2)),
             Trit::Zero => unsafe { unreachable_unchecked() },
@@ -80,82 +80,94 @@ impl<'a> JX_01<'a> {
         let ip: Word;
         let sp: Word;
         let bp: Word;
-        let csr: CSR = self.status.csr;
+        let mut csr: CSR = self.status.csr;
 
         match op {
             BPN => {
                 if csr.get_parity() == Trit::NOne {
-                    ip = reg1 + (reg2 + imm);
+                    ip = reg1_val + (reg2_val + imm);
                 } else {
                     ip = self.status.ip + (Word::PONE << 1);
                 }
             }
             BPP => {
                 if csr.get_parity() == Trit::POne {
-                    ip = reg1 + (reg2 + imm);
+                    ip = reg1_val + (reg2_val + imm);
                 } else {
                     ip = self.status.ip + (Word::PONE << 1);
                 }
             }
             BPZ => {
                 if csr.get_parity() == Trit::Zero {
-                    ip = reg1 + (reg2 + imm);
+                    ip = reg1_val + (reg2_val + imm);
                 } else {
                     ip = self.status.ip + (Word::PONE << 1);
                 }
             }
             BGQ => {
                 if csr.get_sign() == Trit::Zero || csr.get_sign() == Trit::POne {
-                    ip = reg1 + (reg2 + imm);
+                    ip = reg1_val + (reg2_val + imm);
                 } else {
                     ip = self.status.ip + (Word::PONE << 1);
                 }
             }
             BLQ => {
                 if csr.get_sign() == Trit::Zero || csr.get_sign() == Trit::NOne {
-                    ip = reg1 + (reg2 + imm);
+                    ip = reg1_val + (reg2_val + imm);
                 } else {
                     ip = self.status.ip + (Word::PONE << 1);
                 }
             }
             BLT => {
                 if csr.get_sign() == Trit::NOne {
-                    ip = reg1 + (reg2 + imm);
+                    ip = reg1_val + (reg2_val + imm);
                 } else {
                     ip = self.status.ip + (Word::PONE << 1);
                 }
             }
             BGT => {
                 if csr.get_sign() == Trit::POne {
-                    ip = reg1 + (reg2 + imm);
+                    ip = reg1_val + (reg2_val + imm);
                 } else {
                     ip = self.status.ip + (Word::PONE << 1);
                 }
             }
             BNE => {
-                if csr.get_sign() == Trit::NOne || csr.get_sign() == Trit::POne{
-                    ip = reg1 + (reg2 + imm);
+                if csr.get_sign() == Trit::NOne || csr.get_sign() == Trit::POne {
+                    ip = reg1_val + (reg2_val + imm);
                 } else {
                     ip = self.status.ip + (Word::PONE << 1);
                 }
             }
             BEQ => {
                 if csr.get_sign() == Trit::Zero {
-                    ip = reg1 + (reg2 + imm);
+                    ip = reg1_val + (reg2_val + imm);
                 } else {
                     ip = self.status.ip + (Word::PONE << 1);
                 }
             }
             CMP => {
-                let res = reg1 - reg2;
+                let res = reg1_val - reg2_val;
                 // set sign, parity, and carry
+                csr.set_sign(res.get_sign());
+                csr.set_parity(res.get_parity());
+                csr.set_carry(res.get_carry());
 
                 ip = self.status.ip + (Word::PONE << 1);
             }
             STRE => {
+                // *([R] + imm) = [R]
+                let addr = reg1_val + imm;
+                let mem_loc = self.memory.get_physical_word_mut(addr);
+                // I might have messed things up but it's okay :)
+                *mem_loc = reg2_val;
                 ip = self.status.ip + (Word::PONE << 1);
             }
             LOAD => {
+                // [R] = *([R] + imm)
+                let addr = reg1_val + imm;
+                let val = self.memory.get_physical_word(addr);
+                self.registers.set_word(reg2, *val);
                 ip = self.status.ip + (Word::PONE << 1);
             }
             ADD => {

@@ -181,6 +181,19 @@ impl From<Word> for [Trit; 27] {
     }
 }
 
+impl From<&Word> for [Trit; 27] {
+    fn from(value: &Word) -> Self {
+        let value = value.0;
+        [
+            0u64, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+            23, 24, 25, 26,
+        ]
+        .map(|i| unsafe {
+            std::mem::transmute::<u8, Trit>(((value >> (2 * i)) & TRIT_BIT_MASK as u64) as u8)
+        })
+    }
+}
+
 impl From<Word> for [[Trit; 3]; 9] {
     fn from(value: Word) -> Self {
         let value: [Trit; 27] = value.into();
@@ -459,8 +472,24 @@ impl Word {
         }
     }
 
-    pub fn carry(&self) -> Trit {
+    pub fn get_carry(&self) -> Trit {
         unsafe { std::mem::transmute((self.0 >> WORD_BIT_LEN) as u8 & TRIT_BIT_MASK) }
+    }
+
+    pub fn get_sign(&self) -> Trit {
+        let nums: [Trit; 27] = self.into();
+        for &trit in nums.iter().rev() {
+            if trit != Trit::Zero {
+                return trit;
+            }
+        }
+        return Trit::Zero;
+    }
+
+    pub fn get_parity(&self) -> Trit {
+        unsafe {
+            std::mem::transmute(self.num() as u8 & Trit::TRIT_BIT_MASK)
+        }
     }
 
     pub fn num(&self) -> u64 {
@@ -496,7 +525,7 @@ pub mod test {
         ]
         .into();
         let res = ones + one;
-        let carry = res.carry();
+        let carry = res.get_carry();
         let num = res.num();
         let cmp = res.0;
         let res: [Trit; 27] = res.into();
@@ -512,7 +541,7 @@ pub mod test {
         ]
         .into();
         let res = nones + none;
-        let carry = res.carry();
+        let carry = res.get_carry();
         let num = res.num();
         let cmp = res.0;
         let res: [Trit; 27] = res.into();
@@ -523,7 +552,7 @@ pub mod test {
 
         let zeros: Word = [ZERO; 27].into();
         let res = zeros + one;
-        let carry = res.carry();
+        let carry = res.get_carry();
         let res: [Trit; 27] = res.into();
         let exp: [Trit; 27] = one.into();
         assert_eq!(res, exp);
