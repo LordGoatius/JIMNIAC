@@ -125,7 +125,7 @@ impl Gpu {
 pub mod tests {
     use std::time::Duration;
 
-    use sdl3::{event::Event, keyboard::Keycode, pixels::Color};
+    use sdl3::{event::Event, keyboard::Keycode};
     use ternary::{trits::Trit, word::Word};
 
     use crate::gpu::Gpu;
@@ -154,23 +154,44 @@ pub mod tests {
 
         gpu.reset_canvas();
 
-        let coord_one: [Trit; 27] = Word::MAX.into();
-        let zero: [Trit; 27] = Word::ZERO.into();
-        let coord_two: [Trit; 27] = Word::MIN.into();
-
-        let coord: Word = {
+        let coord1: Word = {
             use Trit::*;
-            [POne, POne, POne, POne, POne, POne, POne, POne, POne, POne, POne, POne,
+            [
+             POne, POne, POne, POne, POne, POne, POne, POne, POne, POne, POne, POne,
              NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne,
              POne, Zero, Zero
             ].into()
         };
 
-        gpu.draw(coord);
-        // gpu.draw_line(&coord_one[0..12], &zero[0..12], Color::GREEN);
-        // gpu.draw_line(&zero[0..12], &coord_two[0..12], Color::GREEN);
+        let coord2: Word = {
+            use Trit::*;
+            [
+             POne, POne, POne, POne, POne, POne,
+             NOne, NOne, NOne, NOne, NOne, NOne,
+             NOne, NOne, NOne, NOne, NOne, NOne,
+             POne, POne, POne, POne, POne, POne,
+             Zero, POne, Zero
+            ].into()
+        };
+
+        let coord3: Word = {
+            use Trit::*;
+            [
+             Zero, Zero, Zero, Zero, Zero, Zero,
+             POne, POne, POne, POne, POne, POne,
+             Zero, Zero, Zero, Zero, Zero, Zero,
+             NOne, NOne, NOne, NOne, NOne, NOne,
+             Zero, Zero, POne
+            ].into()
+        };
+
+        gpu.draw(coord1);
+        gpu.draw(coord2);
+        gpu.draw(coord3);
 
         gpu.canvas.present();
+
+        let mut count = 0;
 
         'running: loop {
             for event in gpu.sdl.event_pump().unwrap().poll_iter() {
@@ -182,7 +203,9 @@ pub mod tests {
                         ..
                     } => break 'running,
                     _ => {
+                        gpu.canvas.present();
                         std::thread::sleep(Duration::from_millis(50));
+                        if count > 10 { break 'running; } else { count += 1; }
                     }
                 }
             }

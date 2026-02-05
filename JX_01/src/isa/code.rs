@@ -2,7 +2,10 @@ use septivigntimal::*;
 use ternary::{trits::Trit, word::Word};
 
 use crate::isa::{
-ADD_T as ADD, AND_T as AND, BEQ_T as BEQ, BGQ_T as BGQ, BGT_T as BGT, BLQ_T as BLQ, BLT_T as BLT, BNE_T as BNE, BPN_T as BPN, BPP_T as BPP, BPZ_T as BPZ, CALL_T as CALL, CMP_T as CMP, Instr, LOAD_T as LOAD, MUL_T as MUL, NOT_T as NOT, OR_T as OR, POP_T as POP, PUSH_T as PUSH, QOT_T as QOT, REM_T as REM, RET_T as RET, ROT_T as ROT, SFT_T as SFT, STRE_T as STRE, SUB_T as SUB, registers::Register    
+    CALL_T as CALL,
+    RET_T as RET,
+    Instr,
+    registers::Register
 };
 
 pub fn encode(instr: Instr) -> Word {

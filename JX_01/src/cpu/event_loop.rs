@@ -58,6 +58,7 @@ impl<'a> JX_01<'a> {
         }
     }
 
+    /// Documentation for ALU
     ///                                   Load               Branch
     ///                                   [R] = *imm         [PC] = [R] + imm
     ///  ALU:-[C][I]-[R][imm @ 3-8]       [R] = *([R] + imm) [PC] = [R] +
