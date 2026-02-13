@@ -25,7 +25,7 @@ impl<'a> JX_01<'a> {
             let instruction_ptr = self.status.ip;
             let instruction = *self.memory.get_physical_word(instruction_ptr);
             match isa::decode(instruction) {
-                HALT => (),
+                HALT => break,
                 DTI => (),
                 STI => (),
                 WFI => (),
@@ -56,6 +56,7 @@ impl<'a> JX_01<'a> {
                 INVALID => (),
             }
         }
+        println!("CPU Program Halted.")
     }
 
     /// Documentation for ALU
@@ -78,8 +79,8 @@ impl<'a> JX_01<'a> {
 
         // Values to override after execution
         let ip: Word;
-        let sp: Word;
-        let bp: Word;
+        let mut sp: Word = self.status.sp;
+        let mut bp: Word = self.status.bp;
         let mut csr: CSR = self.status.csr;
 
         match op {
@@ -181,47 +182,96 @@ impl<'a> JX_01<'a> {
                 ip = self.status.ip + (Word::PONE << 1);
             }
             SUB => {
+                let val = reg1_val - (reg2_val + imm);
+                self.registers.set_word(reg1, val);
                 ip = self.status.ip + (Word::PONE << 1);
             }
             MUL => {
+                let val = reg1_val * (reg2_val + imm);
+                self.registers.set_word(reg1, val);
                 ip = self.status.ip + (Word::PONE << 1);
             }
             QOT => {
+                // TODO: Handle Div by Zero Fault
+                let val = reg1_val / (reg2_val + imm);
+                self.registers.set_word(reg1, val.unwrap());
                 ip = self.status.ip + (Word::PONE << 1);
             }
             REM => {
+                // TODO: Handle Div by Zero Fault
+                let val = reg1_val % (reg2_val + imm);
+                self.registers.set_word(reg1, val.unwrap());
                 ip = self.status.ip + (Word::PONE << 1);
             }
             AND => {
+                let val = reg1_val & (reg2_val + imm);
+                self.registers.set_word(reg1, val);
                 ip = self.status.ip + (Word::PONE << 1);
             }
             OR => {
+                let val = reg1_val | (reg2_val + imm);
+                self.registers.set_word(reg1, val);
                 ip = self.status.ip + (Word::PONE << 1);
             }
             SFT => {
+                let shift: isize = (reg2_val + imm).into();
+                let val = match shift.signum() {
+                    -1 => reg1_val >> (shift.abs() as usize),
+                    1 => reg1_val << (shift.abs() as usize),
+                    _ => unsafe {
+                        std::hint::unreachable_unchecked()
+                    }
+                };
+                self.registers.set_word(reg1, val);
                 ip = self.status.ip + (Word::PONE << 1);
             }
             NOT => {
+                //  ALU:-[C][I]-[R][imm @ 3-8]
+                //             \[R][R][imm @ 4-8]
+                //  ALU Ops
+                //  [R] = [R] op ([R] + imm)
+                //  [R] = [R] op imm
+                self.registers.set_word(reg1, -reg1_val);
                 ip = self.status.ip + (Word::PONE << 1);
             }
             ROT => {
+                self.registers.set_word(reg1, reg1_val.rot(reg2_val.into()));
                 ip = self.status.ip + (Word::PONE << 1);
             }
+            //  Stack Ops:
+            //  [R] + imm
+            //  [R] + ([R] * imm)
+            // ONLY SUPPORTING WORD SIZE VALUES RIGHT NOW
             PUSH => {
+                // TODO: Memory write
                 ip = self.status.ip + (Word::PONE << 1);
+                sp = self.status.sp + (Word::PONE << 1);
             }
             POP => {
+                // TODO: Memory write
                 ip = self.status.ip + (Word::PONE << 1);
+                sp = self.status.sp - (Word::PONE << 1);
             }
+            // Setup the new stack frame
             CALL => {
+                // TODO:
+                // - Push next IP to stack
+                // - Push BP to stack
+                // - Move BP to after prev BP location
+                // - Move SP to base pointer
                 ip = self.status.ip + (Word::PONE << 1);
             }
             RET => {
+                // TODO:
+                // - Move SP to BP location
+                // - Pop prev BP to BP
+                // - Pop prev IP to SP
                 ip = self.status.ip + (Word::PONE << 1);
             }
             _ => unsafe { unreachable_unchecked() },
         }
         self.status.ip = ip;
+        self.status.sp = sp;
     }
 
     fn execute_ri_op(&mut self, op: Op, ctrl: Control, reg: Register, imm: Word) {

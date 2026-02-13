@@ -1,8 +1,5 @@
 use std::{
-    fmt::Display,
-    hash::Hash,
-    ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Rem, Shl, Shr, Sub},
-    str::FromStr,
+    fmt::Display, hash::Hash, hint::unreachable_unchecked, ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Rem, Shl, Shr, Sub}, str::FromStr
 };
 
 use crate::{
@@ -446,6 +443,17 @@ impl Word {
 
     pub const unsafe fn from_u64(num: u64) -> Word {
         Word(num)
+    }
+
+    pub fn rot(&self, val: isize) -> Word {
+        let mut word: [Trit; 27] = self.into();
+        let func = match val.signum() {
+            -1 => <[Trit]>::rotate_right,
+            1 => <[Trit]>::rotate_left,
+            _ => unsafe { unreachable_unchecked() }
+        };
+        func(&mut word, val.abs() as usize);
+        word.into()
     }
 
     pub const fn get(&self, idx: usize) -> Option<Trit> {
