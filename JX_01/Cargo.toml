@@ -7,3 +7,7 @@ edition = "2024"
 ternary = { path = "../ternary" }
 septivigntimal = { path = "../septivigntimal" }
 sdl3 = "0.16.1"
+
+[features]
+default = ["gpu"]
+gpu = []

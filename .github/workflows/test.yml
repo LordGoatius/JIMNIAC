@@ -13,6 +13,6 @@ jobs:
       - uses: actions/checkout@v5
       - run: rustup override set nightly
       - name: Build binaries in "${{ matrix.BUILD_TARGET }}" mode
-        run: cargo build --profile ${{ matrix.BUILD_TARGET }}
+        run: cargo build --profile ${{ matrix.BUILD_TARGET }} --no-default-features
       - name: Run tests in "${{ matrix.BUILD_TARGET }}" mode
-        run: cargo test --profile ${{ matrix.BUILD_TARGET }}
+        run: cargo test --profile ${{ matrix.BUILD_TARGET }} --no-default-features

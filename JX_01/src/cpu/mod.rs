@@ -4,12 +4,15 @@ use septivigntimal::{to_num, ZERO};
 
 use ternary::{TRYTE_BIT_MASK, TRYTE_LEN, WORD_LEN, trits::Trit, tryte::Tryte, word::Word};
 
-use crate::{gpu::Gpu, isa::registers::Register, memory::Memory, ports::Ports};
+use crate::{isa::registers::Register, memory::Memory, ports::Ports};
+#[cfg(feature = "gpu")]
+use crate::gpu::Gpu;
 
 #[allow(non_camel_case_types)]
 pub struct JX_01<'a> {
     memory: Memory<'a>,
     ports: Ports,
+    #[cfg(feature = "gpu")]
     gpu: Option<Gpu>,
     interrupt: bool,
     interrupt_num: Tryte,
