@@ -16,6 +16,7 @@ pub struct JX_01<'a> {
     gpu: Option<Gpu>,
     interrupt: bool,
     interrupt_num: Tryte,
+    idt_loc: Option<Word>,
     // Change to allow zero register to be zero
     registers: Registers,
     status: Status,

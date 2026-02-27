@@ -15,36 +15,64 @@ pub type Opt = u32;
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Instr {
     HALT,
+    /// Disable Int
     DTI,
+    /// Enable Int
     STI,
+    /// Wait for Int
     WFI,
+    /// Return from Int
     RTI,
+    /// Load IDT
     LIT(Register),
+    /// Int
     INTERRUPT(Tryte),
+    /// Enable GPU
     EGPU(Register),
+    /// Load Vector Buffer
     LVB(Register, Word),
+    /// Enable GPU event loop
     EGEL(Register),
+    /// Push CSR
     PCSR,
+    /// Push PSR
     PPSR,
+    /// Push PTR
     PPTR,
+    /// POP CSR
     POCSR,
+    /// POP PSR
     POPSR,
+    /// POP PTR
     POPTR,
+    /// Load Page Table
     LPT(Register),
+    /// Int Mask
     INTM(Tryte),
+    /// Int Enable
     INTE(Tryte),
+    /// Int Toggle
     INTS(Tryte),
+    /// Read In
     IN(Register, Control, Tryte),
+    /// Write out
     OUT(Register, Control, Tryte),
     // Certain instructions ignore some of these arguments
+    /// Op Instr (2 reg)
     OPRR(Control, Op, Register, Register, Word),
+    /// Op Instr (1 reg)
     OPRI(Control, Op, Register, Word),
+    /// Call function
     CALL(Register, Control, Word),
+    /// Return function
     RET,
     // ENTER/LEAVE are CALL/RET
     // *but* with a beginning 1 instead of a 0 (usual) or T (cpu reserved)
+    /// Enter Function
     ENTER,
+    /// Leave Function
     LEAVE,
+    /// Unrecognized Instr
     INVALID,
 }
 
@@ -70,32 +98,32 @@ pub const fn op_to_opt(op: Op) -> Opt {
     opt
 }
 
-pub const BPN: Opt = op_to_opt(Z);
-pub const BPP: Opt = op_to_opt(Y);
-pub const BPZ: Opt = op_to_opt(X);
-pub const BGQ: Opt = op_to_opt(W);
-pub const BLQ: Opt = op_to_opt(V);
-pub const BLT: Opt = op_to_opt(U);
-pub const BGT: Opt = op_to_opt(T);
-pub const BNE: Opt = op_to_opt(S);
-pub const BEQ: Opt = op_to_opt(R);
-pub const CMP: Opt = op_to_opt(Q);
-pub const STRE: Opt = op_to_opt(P);
-pub const LOAD: Opt = op_to_opt(O);
-pub const ADD: Opt = op_to_opt(A);
-pub const SUB: Opt = op_to_opt(B);
-pub const MUL: Opt = op_to_opt(C);
-pub const QOT: Opt = op_to_opt(D);
-pub const REM: Opt = op_to_opt(E);
-pub const AND: Opt = op_to_opt(F);
-pub const OR: Opt = op_to_opt(G);
-pub const SFT: Opt = op_to_opt(H);
-pub const NOT: Opt = op_to_opt(I);
-pub const ROT: Opt = op_to_opt(J);
-pub const PUSH: Opt = op_to_opt(K);
-pub const POP: Opt = op_to_opt(L);
-pub const CALL: Opt = op_to_opt(M);
-pub const RET: Opt = op_to_opt(N);
+pub const BPN:  Opt = op_to_opt(BPN_T);
+pub const BPP:  Opt = op_to_opt(BPP_T);
+pub const BPZ:  Opt = op_to_opt(BPZ_T);
+pub const BGQ:  Opt = op_to_opt(BGQ_T);
+pub const BLQ:  Opt = op_to_opt(BLQ_T);
+pub const BLT:  Opt = op_to_opt(BLT_T);
+pub const BGT:  Opt = op_to_opt(BGT_T);
+pub const BNE:  Opt = op_to_opt(BNE_T);
+pub const BEQ:  Opt = op_to_opt(BEQ_T);
+pub const CMP:  Opt = op_to_opt(CMP_T);
+pub const STRE: Opt = op_to_opt(STRE_T);
+pub const LOAD: Opt = op_to_opt(LOAD_T);
+pub const ADD:  Opt = op_to_opt(ADD_T);
+pub const SUB:  Opt = op_to_opt(SUB_T);
+pub const MUL:  Opt = op_to_opt(MUL_T);
+pub const QOT:  Opt = op_to_opt(QOT_T);
+pub const REM:  Opt = op_to_opt(REM_T);
+pub const AND:  Opt = op_to_opt(AND_T);
+pub const OR:   Opt = op_to_opt(OR_T);
+pub const SFT:  Opt = op_to_opt(SFT_T);
+pub const NOT:  Opt = op_to_opt(NOT_T);
+pub const ROT:  Opt = op_to_opt(ROT_T);
+pub const PUSH: Opt = op_to_opt(PUSH_T);
+pub const POP:  Opt = op_to_opt(POP_T);
+pub const CALL: Opt = op_to_opt(CALL_T);
+pub const RET:  Opt = op_to_opt(RET_T);
 
 pub const BPN_T: Op = Z;
 pub const BPP_T: Op = Y;
