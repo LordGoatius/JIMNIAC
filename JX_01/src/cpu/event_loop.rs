@@ -1,4 +1,4 @@
-use std::hint::unreachable_unchecked;
+use std::{hint::unreachable_unchecked, sync::atomic::Ordering};
 
 use ternary::{prelude::{Tryte, Word}, trits::Trit};
 
@@ -6,9 +6,9 @@ use crate::{
     cpu::{CSR, JX_01},
     isa::{
         self,
-        registers::Register,
+        registers::{N11, N12, N13, Register},
         *,
-    },
+    }, ports::Ports,
 };
 
 impl<'a> JX_01<'a> {
@@ -17,13 +17,20 @@ impl<'a> JX_01<'a> {
         // Ports
         // Status register
         // Option<Gpu>
+        self.ports = Some(Ports::init(self.interrupt.clone(), self.interrupt_num.clone()));
 
         loop {
-            // Put check for interrupt here
             use Instr::*;
 
             let instruction_ptr = self.status.ip;
             let instruction = *self.memory.get_physical_word(instruction_ptr);
+            // Check for status here: Interrupts
+            if let Some(int) = self.interrupt() {
+                // interrupt logic
+            } else {
+                continue;
+            }
+
             match isa::decode(instruction) {
                 HALT => break,
                 DTI => (),
@@ -40,17 +47,50 @@ impl<'a> JX_01<'a> {
                         break;
                     },
                 },
-                INTERRUPT(int) => (),
+                INTERRUPT(int) => {
+                    // TODO: Valid user int checks.
+                    self.interrupt.store(true, Ordering::Release);
+                    self.interrupt_num.store(int.num(), Ordering::Release);
+                },
                 EGPU(reg) => (),
                 LVB(reg, imm) => (),
                 EGEL(reg) => (),
-                PCSR => (),
-                PPSR => (),
-                PPTR => (),
-                POCSR => (),
-                POPSR => (),
-                POPTR => (),
-                LPT(reg) => (),
+                PCSR => {
+                    *self.memory.get_physical_word_mut(self.status.sp) = self.status.csr.0;
+                    self.status.ip = self.status.ip + (Word::PONE << 1);
+                    self.status.sp = self.status.sp + (Word::PONE << 1);
+                },
+                PPSR => {
+                    *self.memory.get_physical_word_mut(self.status.sp) = self.status.psr;
+                    self.status.ip = self.status.ip + (Word::PONE << 1);
+                    self.status.sp = self.status.sp + (Word::PONE << 1);
+                },
+                PPTR => {
+                    *self.memory.get_physical_word_mut(self.status.sp) = self.status.ptr;
+                    self.status.ip = self.status.ip + (Word::PONE << 1);
+                    self.status.sp = self.status.sp + (Word::PONE << 1);
+                },
+                POCSR => {
+                    self.registers.set_word(N13, *self.memory.get_physical_word(self.status.sp));
+                    self.status.ip = self.status.ip + (Word::PONE << 1);
+                    self.status.sp = self.status.sp - (Word::PONE << 1);
+                    
+                },
+                POPSR => {
+                    self.registers.set_word(N12, *self.memory.get_physical_word(self.status.sp));
+                    self.status.ip = self.status.ip + (Word::PONE << 1);
+                    self.status.sp = self.status.sp - (Word::PONE << 1);
+                    
+                },
+                POPTR => {
+                    self.registers.set_word(N11, *self.memory.get_physical_word(self.status.sp));
+                    self.status.ip = self.status.ip + (Word::PONE << 1);
+                    self.status.sp = self.status.sp - (Word::PONE << 1);
+                    
+                },
+                LPT(reg) => {
+                    self.page_table = Some(self.registers.get_word(reg));
+                },
                 INTM(imm) => (),
                 INTE(imm) => (),
                 INTS(imm) => (),
@@ -58,6 +98,7 @@ impl<'a> JX_01<'a> {
                 OUT(reg, ctrl, imm) => (),
                 OPRR(ctrl, op, reg1, reg2, imm) => self.execute_rr_op(op, ctrl, reg1, reg2, imm),
                 OPRI(ctrl, op, reg, imm) => self.execute_ri_op(op, ctrl, reg, imm),
+                // Unused: Use OP CALL/RET/ENTR/LEAVE
                 CALL(reg, ctrl, imm) => (),
                 RET => (),
                 ENTER => (),

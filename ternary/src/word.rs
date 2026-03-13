@@ -500,7 +500,7 @@ impl Word {
         }
     }
 
-    pub fn num(&self) -> u64 {
+    pub const fn num(&self) -> u64 {
         (self.0) & WORD_BIT_MASK
     }
 }

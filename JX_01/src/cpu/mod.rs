@@ -1,5 +1,9 @@
 pub mod event_loop;
 
+use std::{mem, sync::{Arc, atomic::{AtomicBool, AtomicU32, Ordering}}};
+
+use crossbeam_utils::CachePadded;
+
 use septivigntimal::{to_num, ZERO};
 
 use ternary::{TRYTE_BIT_MASK, TRYTE_LEN, WORD_LEN, trits::Trit, tryte::Tryte, word::Word};
@@ -11,15 +15,27 @@ use crate::gpu::Gpu;
 #[allow(non_camel_case_types)]
 pub struct JX_01<'a> {
     memory: Memory<'a>,
-    ports: Ports,
+    ports: Option<Ports>,
     #[cfg(feature = "gpu")]
     gpu: Option<Gpu>,
-    interrupt: bool,
-    interrupt_num: Tryte,
     idt_loc: Option<Word>,
+    page_table: Option<Word>,
     // Change to allow zero register to be zero
     registers: Registers,
     status: Status,
+    pub interrupt: Arc<CachePadded<AtomicBool>>,
+    pub interrupt_num: Arc<AtomicU32>,
+}
+impl JX_01<'_> {
+    fn interrupt(&self) -> Option<Tryte> {
+        if self.interrupt.load(Ordering::Acquire) {
+            None
+        } else {
+            Some(unsafe {
+                mem::transmute(self.interrupt_num.load(Ordering::Acquire))
+            })
+        }
+    }
 }
 
 #[derive(Default)]
@@ -71,6 +87,8 @@ pub struct Status {
     csr: CSR,
     // Program Table Register
     ptr: Word,
+    // Program Status Register
+    psr: Word,
     sp: Word,
     bp: Word,
     ip: Word,

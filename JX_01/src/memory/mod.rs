@@ -26,7 +26,7 @@ pub struct Memory<'a> {
     csr: &'a Word,
     // A reference to the page table register to read lvl 3 table location
     ptr: &'a Word,
-    mmu: MMU,
+    mmu: Box<MMU>,
     memory: HashMap<u64, Page>,
 }
 

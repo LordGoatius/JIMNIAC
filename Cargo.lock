@@ -6,6 +6,7 @@ version = 4
 name = "JX_01"
 version = "0.1.0"
 dependencies = [
+ "crossbeam-utils",
  "sdl3",
  "septivigntimal",
  "ternary",
@@ -31,6 +32,12 @@ name = "bitflags"
 version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "812e12b5285cc515a9c72a5c1d3b6d46a19dac5acfef5265968c166106e31dd3"
+
+[[package]]
+name = "crossbeam-utils"
+version = "0.8.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0a5c400df2834b80a4c3327b3aad3a4c4cd4de0629063962b03235697506a28"
 
 [[package]]
 name = "lazy_static"
