@@ -6,9 +6,9 @@ use crate::memory::{Address, Memory};
 /// Represents the inner GPU data structure
 pub struct Gpu {
     // Internal GPU fields
-    vector_buffer: Address,
-    vector_buffer_size: Word,
-    event_loop_callback: Address,
+    pub(crate) vector_buffer: Address,
+    pub(crate) vector_buffer_size: Word,
+    pub(crate) event_loop_callback: Option<Address>,
     gpu_state: Word, // temp
     // External SDL
     canvas: Canvas<Window>,
@@ -29,13 +29,13 @@ impl Gpu {
 
         let canvas = window.into_canvas();
 
+        let THREE = Word::PONE << 1;
         let vector_buffer = *memory.get_physical_word(addr);
-        addr = addr + Word::PONE;
+        addr = addr + THREE;
         let vector_buffer_size = *memory.get_physical_word(addr);
-        addr = addr + Word::PONE;
-        let event_loop_callback = *memory.get_physical_word(addr);
-        addr = addr + Word::PONE;
+        addr = addr + THREE;
         let gpu_state = *memory.get_physical_word(addr);
+        let event_loop_callback = None;
 
         Gpu {
             vector_buffer,
@@ -146,7 +146,7 @@ pub mod tests {
         let mut gpu = Gpu {
             vector_buffer: Word::ZERO,
             vector_buffer_size: Word::ZERO,
-            event_loop_callback: Word::ZERO,
+            event_loop_callback: Some(Word::ZERO),
             gpu_state: Word::ZERO,
             canvas,
             sdl,

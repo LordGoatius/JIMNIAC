@@ -3,21 +3,38 @@ use std::{hint::unreachable_unchecked, sync::atomic::Ordering};
 use ternary::{prelude::{Tryte, Word}, trits::Trit};
 
 use crate::{
-    cpu::{CSR, JX_01},
-    isa::{
+    cpu::{CSR, JX_01, Status}, gpu::Gpu, isa::{
         self,
         registers::{N11, N12, N13, Register},
         *,
-    }, ports::Ports,
+    }, ports::Ports
 };
 
 impl<'a> JX_01<'a> {
     pub fn run_program(&mut self) {
         // Initalize multi-threaded portions here
         // Ports
-        // Status register
-        // Option<Gpu>
         self.ports = Some(Ports::init(self.interrupt.clone(), self.interrupt_num.clone()));
+        // A program must setup the stack and base pointer
+        self.status = Status {
+            csr: CSR(Word::ZERO),
+            ptr: Word::ZERO,
+            psr: Word::ZERO,
+            sp: Word::ZERO,
+            bp: Word::ZERO,
+            ip: Word::ZERO,
+        };
+        // Option<Gpu>
+        self.gpu = None;
+        struct IntStatus {
+            enabled: bool,
+            waiting: bool,
+        }
+
+        let mut int_status = IntStatus {
+            enabled: true,
+            waiting: false,
+        };
 
         loop {
             use Instr::*;
@@ -25,18 +42,22 @@ impl<'a> JX_01<'a> {
             let instruction_ptr = self.status.ip;
             let instruction = *self.memory.get_physical_word(instruction_ptr);
             // Check for status here: Interrupts
-            if let Some(int) = self.interrupt() {
+            if let Some(int) = self.interrupt() && int_status.enabled {
                 // interrupt logic
-            } else {
+            } else if int_status.waiting {
                 continue;
             }
 
             match isa::decode(instruction) {
                 HALT => break,
-                DTI => (),
-                STI => (),
-                WFI => (),
-                RTI => (),
+                DTI => int_status.enabled = false,
+                STI => int_status.enabled = true,
+                WFI => int_status.waiting = true,
+                RTI => {
+                    // store return address when exceptions occur and return.
+                    // Don't manage the stack or registers.
+                    todo!()
+                },
                 LIT(reg) => match self.idt_loc.as_mut() {
                     Some(loc) => {
                         *loc = self.registers.get_word(reg);
@@ -52,9 +73,21 @@ impl<'a> JX_01<'a> {
                     self.interrupt.store(true, Ordering::Release);
                     self.interrupt_num.store(int.num(), Ordering::Release);
                 },
-                EGPU(reg) => (),
-                LVB(reg, imm) => (),
-                EGEL(reg) => (),
+                EGPU(reg) => {
+                    let addr = self.registers.get_word(reg);
+                    self.gpu = Some(Gpu::from_addr(addr, &mut self.memory));
+                },
+                LVB(reg, imm) => {
+                    self.gpu.iter_mut().for_each(|gpu| {
+                        gpu.vector_buffer = self.registers.get_word(reg);
+                        gpu.vector_buffer_size = imm;
+                    });
+                },
+                EGEL(reg) => {
+                    self.gpu.iter_mut().for_each(|gpu| {
+                        gpu.event_loop_callback = Some(self.registers.get_word(reg))
+                    });
+                },
                 PCSR => {
                     *self.memory.get_physical_word_mut(self.status.sp) = self.status.csr.0;
                     self.status.ip = self.status.ip + (Word::PONE << 1);
@@ -98,9 +131,12 @@ impl<'a> JX_01<'a> {
                 OUT(reg, ctrl, imm) => (),
                 OPRR(ctrl, op, reg1, reg2, imm) => self.execute_rr_op(op, ctrl, reg1, reg2, imm),
                 OPRI(ctrl, op, reg, imm) => self.execute_ri_op(op, ctrl, reg, imm),
-                // Unused: Use OP CALL/RET/ENTR/LEAVE
+                // Call calls.
                 CALL(reg, ctrl, imm) => (),
+                // Ret pops until sp/bp are same, moves each to previous stack frame according
+                // to the call instruction
                 RET => (),
+                // Unused: Use OP CALL/RET
                 ENTER => (),
                 LEAVE => (),
                 INVALID => (),
