@@ -1,12 +1,7 @@
 use septivigntimal::*;
 use ternary::{trits::Trit, word::Word};
 
-use crate::isa::{
-    CALL_T as CALL,
-    RET_T as RET,
-    Instr,
-    registers::Register
-};
+use crate::isa::{registers::Register, Instr, CALL_T as CALL, RET_T as RET};
 
 pub fn encode(instr: Instr) -> Word {
     match instr {
@@ -172,12 +167,28 @@ pub fn decode(word: Word) -> Instr {
     }
 }
 
+pub trait DecEncExt {
+    fn encode(&self) -> Vec<Word>;
+    fn check(&self);
+}
+
+impl DecEncExt for [Instr] {
+    fn encode(&self) -> Vec<Word> {
+        self.iter().cloned().map(encode).collect()
+    }
+
+    fn check(&self) {
+        for &i in self {
+            assert_eq!(i, decode(encode(i)));
+        }
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use crate::isa::{
         code::{decode, encode},
-        ADD_T as ADD,
-        QOT_T as QOT
+        ADD_T as ADD, QOT_T as QOT,
     };
 
     #[test]
@@ -185,12 +196,7 @@ pub mod tests {
         use super::Instr::*;
         use crate::isa::registers::*;
         use crate::isa::{
-            IN_CTRL_R,
-            IN_CTRL_T,
-            ALU_CTRL_R_RI,
-            ALU_CTRL_R_RR,
-            CALL_CTRL_R,
-            CALL_CTRL_T
+            ALU_CTRL_R_RI, ALU_CTRL_R_RR, CALL_CTRL_R, CALL_CTRL_T, IN_CTRL_R, IN_CTRL_T,
         };
         use ternary::word::Word;
 

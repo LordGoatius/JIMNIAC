@@ -76,18 +76,18 @@ pub enum Instr {
     INVALID,
 }
 
-const IN_CTRL_T: Control = [Trit::Zero, Trit::NOne, Trit::POne];
-const IN_CTRL_R: Control = [Trit::Zero, Trit::POne, Trit::POne];
-const OUT_CTRL_T: Control = [Trit::Zero, Trit::NOne, Trit::POne];
-const OUT_CTRL_R: Control = [Trit::Zero, Trit::POne, Trit::POne];
+pub const IN_CTRL_T: Control = [Trit::Zero, Trit::NOne, Trit::POne];
+pub const IN_CTRL_R: Control = [Trit::Zero, Trit::POne, Trit::POne];
+pub const OUT_CTRL_T: Control = [Trit::Zero, Trit::NOne, Trit::POne];
+pub const OUT_CTRL_R: Control = [Trit::Zero, Trit::POne, Trit::POne];
 
-const ALU_CTRL_T_RR: Control = [Trit::NOne, Trit::NOne, Trit::Zero];
-const ALU_CTRL_T_RI: Control = [Trit::Zero, Trit::NOne, Trit::Zero];
-const ALU_CTRL_R_RR: Control = [Trit::NOne, Trit::POne, Trit::Zero];
-const ALU_CTRL_R_RI: Control = [Trit::Zero, Trit::POne, Trit::Zero];
+pub const ALU_CTRL_T_RR: Control = [Trit::NOne, Trit::NOne, Trit::Zero];
+pub const ALU_CTRL_T_RI: Control = [Trit::Zero, Trit::NOne, Trit::Zero];
+pub const ALU_CTRL_R_RR: Control = [Trit::NOne, Trit::POne, Trit::Zero];
+pub const ALU_CTRL_R_RI: Control = [Trit::Zero, Trit::POne, Trit::Zero];
 
-const CALL_CTRL_R: Control = [Trit::Zero, Trit::POne, Trit::Zero];
-const CALL_CTRL_T: Control = [Trit::Zero, Trit::NOne, Trit::Zero];
+pub const CALL_CTRL_R: Control = [Trit::Zero, Trit::POne, Trit::Zero];
+pub const CALL_CTRL_T: Control = [Trit::Zero, Trit::NOne, Trit::Zero];
 
 pub const fn op_to_opt(op: Op) -> Opt {
     let mut opt: u32 = 0;

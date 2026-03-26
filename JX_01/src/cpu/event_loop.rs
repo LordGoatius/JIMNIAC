@@ -129,15 +129,24 @@ impl<'a> JX_01<'a> {
                 INTS(imm) => (),
                 IN(reg, ctrl, imm) => (),
                 OUT(reg, ctrl, imm) => (),
+                // Unused: Don't use OP CALL/RET
+                // For full compliance/optimization, make them identical with different meanings
                 OPRR(ctrl, op, reg1, reg2, imm) => self.execute_rr_op(op, ctrl, reg1, reg2, imm),
                 OPRI(ctrl, op, reg, imm) => self.execute_ri_op(op, ctrl, reg, imm),
-                // Call calls.
+                // Call calls (jumps to addr in rn13)
                 CALL(reg, ctrl, imm) => (),
-                // Ret pops until sp/bp are same, moves each to previous stack frame according
-                // to the call instruction
+                // Retun jumps to value in rn13
                 RET => (),
-                // Unused: Use OP CALL/RET
+                // Enter:
+                // - Push next IP to stack
+                // - Push BP to stack
+                // - Move BP to after prev BP location
+                // - Move SP to base pointer
                 ENTER => (),
+                // Leave:
+                // - Move SP to BP location
+                // - Pop prev BP to BP
+                // - Pop prev IP to SP
                 LEAVE => (),
                 INVALID => (),
             }
@@ -340,13 +349,7 @@ impl<'a> JX_01<'a> {
                 ip = self.status.ip + (Word::PONE << 1);
                 sp = self.status.sp - (Word::PONE << 1);
             }
-            // Setup the new stack frame
             CALL => {
-                // TODO:
-                // - Push next IP to stack
-                // - Push BP to stack
-                // - Move BP to after prev BP location
-                // - Move SP to base pointer
                 ip = self.status.ip + (Word::PONE << 1);
             }
             RET => {
@@ -557,18 +560,9 @@ impl<'a> JX_01<'a> {
             }
             // Setup the new stack frame
             CALL => {
-                // TODO:
-                // - Push next IP to stack
-                // - Push BP to stack
-                // - Move BP to after prev BP location
-                // - Move SP to base pointer
                 ip = self.status.ip + (Word::PONE << 1);
             }
             RET => {
-                // TODO:
-                // - Move SP to BP location
-                // - Pop prev BP to BP
-                // - Pop prev IP to SP
                 ip = self.status.ip + (Word::PONE << 1);
             }
             _ => unsafe { unreachable_unchecked() },
@@ -579,5 +573,49 @@ impl<'a> JX_01<'a> {
 
     pub fn import_memory(&mut self, trytes: &[Tryte]) {
         todo!()
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use ternary::word::Word;
+    use crate::isa::{ADD_T, ALU_CTRL_R_RI, ALU_CTRL_R_RR, BEQ_T, BLQ_T, CMP_T, Instr, MUL_T, code::DecEncExt, registers::*};
+
+    #[test]
+    fn test_exec() {
+        let n: Word = 6.into();
+        // NOTE: Mov is not a thing in my ISA, since it is risc. Uhh work tbd because this
+        // current ISA is a hot mess. I'll redo it for real later.
+        // Anyways, mov is really [add %R, imm], or some equivalent set of instructions for larger immediates.
+
+        // 0  mov %RN11, 1
+        // 3  mov %RN13, n
+        // 6  mov %RN12, 1
+        // 9  cmp %RN13, %RN11
+        // 12 bleqi 24
+        // 15 mul %RN12, %RN12, %RN13
+        // 18 add %RN13, %RN13, %R0, -1
+        // 21 bri 9
+        // 24 hlt
+        use Instr::*;
+        let instrs = [
+            OPRI(ALU_CTRL_R_RI, ADD_T, NN11, Word::PONE),
+            OPRI(ALU_CTRL_R_RI, ADD_T, NN13, n),
+            OPRI(ALU_CTRL_R_RI, ADD_T, NN12, Word::PONE),
+            OPRR(ALU_CTRL_R_RR, CMP_T, NN13, NN11, Word::ZERO),
+            OPRI(ALU_CTRL_R_RI, BLQ_T, N0, 24.into()),
+            OPRR(ALU_CTRL_R_RR, MUL_T, NN12, NN13, Word::ZERO),
+            OPRR(ALU_CTRL_R_RR, ADD_T, NN13, N0, Word::NONE),
+            OPRR(ALU_CTRL_R_RR, CMP_T, N0, N0, Word::ZERO),
+            OPRI(ALU_CTRL_R_RI, BEQ_T, N0, 9.into()),
+            HALT
+        ];
+
+        // NOTES:
+        // For next time
+        // - Make branch and OP different
+        // - Follow RISCV. Just do what they do. they figured something good out.
+        // - The ctrl tribble is stupid. Easy to write "assembly" errors.
+        instrs.check();
     }
 }
