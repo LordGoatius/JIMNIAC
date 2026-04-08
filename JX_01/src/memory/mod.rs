@@ -17,35 +17,32 @@ pub const PAGE_TABLE_SIZE: usize = 729;
 
 pub type Address = Word;
 
-pub struct MMU {
-    tlb: [(Address, Option<Address>); PAGE_TABLE_SIZE],
-}
+// pub struct MMU {
+//     tlb: [(Address, Option<Address>); PAGE_TABLE_SIZE],
+// }
 
-pub struct Memory<'a> {
-    // A reference to the CPU status register to read CPU state (MMU enable trit)
-    csr: &'a Word,
-    // A reference to the page table register to read lvl 3 table location
-    ptr: &'a Word,
-    mmu: Box<MMU>,
+#[derive(Default)]
+pub struct Memory {
+    // mmu: Box<MMU>,
     memory: HashMap<u64, Page>,
 }
 
 pub type Page = [Word; PAGE_TABLE_SIZE];
 pub const EMPTY_PAGE: Page = [Word::ZERO; PAGE_TABLE_SIZE];
 
-impl MMU {
-    pub fn clear(&mut self) {
-        // don't clear the key, but clear the value.
-        // Is this a security concern absolutely waiting to occur?
-        // Yes.
-        self.tlb
-            .iter_mut()
-            .map(|addr| *addr = (addr.0, None))
-            .collect()
-    }
-}
+// impl MMU {
+//     pub fn clear(&mut self) {
+//         // don't clear the key, but clear the value.
+//         // Is this a security concern absolutely waiting to occur?
+//         // Yes.
+//         self.tlb
+//             .iter_mut()
+//             .map(|addr| *addr = (addr.0, None))
+//             .collect()
+//     }
+// }
 
-impl<'a> Memory<'a> {
+impl Memory {
     pub(crate) fn get_physical_word(&mut self, index: Address) -> &Word {
         // We want the first 7 trits to be zero, but the next 20 to be our type
         let addr_page = ((index.num() & (0b1111111111111111111111111111111111111111 << 14))

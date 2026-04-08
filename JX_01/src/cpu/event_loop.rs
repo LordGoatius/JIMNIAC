@@ -1,6 +1,6 @@
 use std::{hint::unreachable_unchecked, sync::atomic::Ordering};
 
-use ternary::{prelude::{Tryte, Word}, trits::Trit};
+use ternary::{prelude::Word, trits::Trit};
 
 use crate::{
     cpu::{CSR, JX_01, Status}, gpu::Gpu, isa::{
@@ -10,7 +10,7 @@ use crate::{
     }, ports::Ports
 };
 
-impl<'a> JX_01<'a> {
+impl JX_01 {
     pub fn run_program(&mut self) {
         // Initalize multi-threaded portions here
         // Ports
@@ -243,7 +243,7 @@ impl<'a> JX_01<'a> {
                 }
             }
             CMP => {
-                let res = reg1_val - reg2_val;
+                let res: Word = reg1_val - reg2_val;
                 // set sign, parity, and carry
                 csr.set_sign(res.get_sign());
                 csr.set_parity(res.get_parity());
@@ -571,15 +571,21 @@ impl<'a> JX_01<'a> {
         self.status.sp = sp;
     }
 
-    pub fn import_memory(&mut self, trytes: &[Tryte]) {
-        todo!()
+    pub fn import_memory(&mut self, memory: &[Word]) {
+        let mut index = Word::MIN;
+        let one = Word::PONE;
+
+        for &word in memory {
+            *self.memory.get_physical_word_mut(index) = word;
+            index = index + one;
+        }
     }
 }
 
 #[cfg(test)]
 pub mod tests {
     use ternary::word::Word;
-    use crate::isa::{ADD_T, ALU_CTRL_R_RI, ALU_CTRL_R_RR, BEQ_T, BLQ_T, CMP_T, Instr, MUL_T, code::DecEncExt, registers::*};
+    use crate::{cpu::JX_01, isa::{ADD_T, ALU_CTRL_R_RI, ALU_CTRL_R_RR, BEQ_T, BLQ_T, CMP_T, Instr, MUL_T, code::DecEncExt, registers::*}};
 
     #[test]
     fn test_exec() {
@@ -615,7 +621,11 @@ pub mod tests {
         // For next time
         // - Make branch and OP different
         // - Follow RISCV. Just do what they do. they figured something good out.
+        // - If you really want you can do variable length instruction encoding ig
         // - The ctrl tribble is stupid. Easy to write "assembly" errors.
+        //   - Especially with load-store.
         instrs.check();
+
+        let mut cpu = JX_01::new();
     }
 }

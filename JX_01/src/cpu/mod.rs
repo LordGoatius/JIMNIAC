@@ -1,6 +1,6 @@
 pub mod event_loop;
 
-use std::{mem, sync::{Arc, atomic::{AtomicBool, AtomicU32, Ordering}}};
+use std::{mem::{self, MaybeUninit}, sync::{Arc, atomic::{AtomicBool, AtomicU32, Ordering}}};
 
 use crossbeam_utils::CachePadded;
 
@@ -13,8 +13,8 @@ use crate::{isa::registers::Register, memory::Memory, ports::Ports};
 use crate::gpu::Gpu;
 
 #[allow(non_camel_case_types)]
-pub struct JX_01<'a> {
-    memory: Memory<'a>,
+pub struct JX_01 {
+    memory: Memory,
     ports: Option<Ports>,
     #[cfg(feature = "gpu")]
     gpu: Option<Gpu>,
@@ -24,9 +24,10 @@ pub struct JX_01<'a> {
     registers: Registers,
     status: Status,
     pub interrupt: Arc<CachePadded<AtomicBool>>,
-    pub interrupt_num: Arc<AtomicU32>,
+    pub interrupt_num: Arc<CachePadded<AtomicU32>>,
 }
-impl JX_01<'_> {
+
+impl JX_01 {
     fn interrupt(&self) -> Option<Tryte> {
         if self.interrupt.load(Ordering::Acquire) {
             None
@@ -34,6 +35,28 @@ impl JX_01<'_> {
             Some(unsafe {
                 mem::transmute(self.interrupt_num.load(Ordering::Acquire))
             })
+        }
+    }
+
+    fn new() -> JX_01 {
+        let memory = Memory::default();
+        let interrupt = Arc::new(CachePadded::new(AtomicBool::new(false)));
+        let interrupt_num = Arc::new(CachePadded::new(AtomicU32::new(0)));
+        let ports = Some(Ports::init(interrupt.clone(), interrupt_num.clone()));
+
+        let registers = Registers([Word::ZERO; 27]);
+        let status = Status::default();
+
+        JX_01 {
+            memory,
+            ports,
+            gpu: None,
+            idt_loc: None,
+            page_table: None,
+            registers,
+            status,
+            interrupt,
+            interrupt_num,
         }
     }
 }
@@ -94,6 +117,18 @@ pub struct Status {
     ip: Word,
 }
 
+impl Default for Status {
+    fn default() -> Self {
+        Self {
+            csr: Default::default(),
+            ptr: Default::default(),
+            psr: Default::default(),
+            sp: Default::default(),
+            bp: Default::default(),
+            ip: Default::default() }
+    }
+}
+
 // The CPU status register holds informations such as:
 // Status Word:
 /// [C, S, P, I, R, G, T, _, _,
@@ -109,6 +144,12 @@ pub struct Status {
 /// T: Page Enable
 #[derive(Clone, Copy)]
 pub struct CSR(Word);
+
+impl Default for CSR {
+    fn default() -> Self {
+        todo!()
+    }
+}
 
 impl CSR {
     pub fn get_carry(&self) -> Trit {

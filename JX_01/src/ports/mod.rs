@@ -11,11 +11,11 @@ pub struct Ports {
     // one port to be used for this version.
     ports: [AtomicU64; Tryte::TRYTE_SIZE],
     interrupts: Arc<CachePadded<AtomicBool>>,
-    interrupt_num: Arc<AtomicU32>,
+    interrupt_num: Arc<CachePadded<AtomicU32>>,
 }
 
 impl Ports {
-    pub fn init<'a>(interrupts: Arc<CachePadded<AtomicBool>>, interrupt_num: Arc<AtomicU32>) -> Ports {
+    pub fn init<'a>(interrupts: Arc<CachePadded<AtomicBool>>, interrupt_num: Arc<CachePadded<AtomicU32>>) -> Ports {
         Ports {
             ports: array::from_fn(|_| AtomicU64::new(Word::ZERO.num())),
             interrupts,
