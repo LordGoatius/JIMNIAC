@@ -5,7 +5,7 @@ use ternary::{prelude::Word, trits::Trit};
 use crate::{
     cpu::{CSR, JX_01, Status}, gpu::Gpu, isa::{
         self,
-        registers::{N11, N12, N13, Register},
+        registers::{N11, N12, N13, NN11, NN12, NN13, RN11, Register},
         *,
     }, ports::Ports
 };
@@ -40,6 +40,8 @@ impl JX_01 {
             use Instr::*;
 
             let instruction_ptr = self.status.ip;
+            let _instr_ptr: isize = dbg!(instruction_ptr.into());
+
             let instruction = *self.memory.get_physical_word(instruction_ptr);
             // Check for status here: Interrupts
             if let Some(int) = self.interrupt() && int_status.enabled {
@@ -48,7 +50,7 @@ impl JX_01 {
                 continue;
             }
 
-            match isa::decode(instruction) {
+            match dbg!(isa::decode(instruction)) {
                 HALT => break,
                 DTI => int_status.enabled = false,
                 STI => int_status.enabled = true,
@@ -163,12 +165,8 @@ impl JX_01 {
     ///  Stack Ops:      ALU Ops          *imm = [R]         [R] ~ imm
     ///  [R] + imm       [R] = [R] op imm *([R] + imm) = [R] [R] ~ [R] + imm
     ///  [R] + [R] * imm [R] = [R] op imm
-    fn execute_rr_op(&mut self, op: Op, ctrl: Control, reg1: Register, reg2: Register, imm: Word) {
-        let (reg1_val, reg2_val) = match ctrl[1] {
-            Trit::NOne => (self.registers.get_tryte(reg1).into(), self.registers.get_tryte(reg2).into()),
-            Trit::POne => (self.registers.get_word(reg1), self.registers.get_word(reg2)),
-            Trit::Zero => unsafe { unreachable_unchecked() },
-        };
+    fn execute_rr_op(&mut self, op: Op, _ctrl: Control, reg1: Register, reg2: Register, imm: Word) {
+        let (reg1_val, reg2_val) =  (self.registers.get_word(reg1), self.registers.get_word(reg2));
 
         let op = op_to_opt(op);
 
@@ -363,14 +361,11 @@ impl JX_01 {
         }
         self.status.ip = ip;
         self.status.sp = sp;
+        self.status.csr = csr;
     }
 
-    fn execute_ri_op(&mut self, op: Op, ctrl: Control, reg: Register, imm: Word) {
-        let reg_val = match ctrl[1] {
-            Trit::NOne => self.registers.get_tryte(reg).into(),
-            Trit::POne => self.registers.get_word(reg),
-            Trit::Zero => unsafe { unreachable_unchecked() },
-        };
+    fn execute_ri_op(&mut self, op: Op, _ctrl: Control, reg: Register, imm: Word) {
+        let reg_val = self.registers.get_word(reg);
 
         let op = op_to_opt(op);
 
@@ -569,15 +564,26 @@ impl JX_01 {
         }
         self.status.ip = ip;
         self.status.sp = sp;
+        self.status.csr = csr;
     }
 
     pub fn import_memory(&mut self, memory: &[Word]) {
-        let mut index = Word::MIN;
-        let one = Word::PONE;
+        let mut index = Word::ZERO;
+        let add = Word::PONE << 1;
 
         for &word in memory {
             *self.memory.get_physical_word_mut(index) = word;
-            index = index + one;
+            index = index + add;
+        }
+    }
+
+    pub fn import_instrs(&mut self, instrs: &[Instr]) {
+        let mut index = Word::ZERO;
+        let add = Word::PONE << 1;
+
+        for &word in instrs {
+            *self.memory.get_physical_word_mut(index) = encode(word);
+            index = index + add;
         }
     }
 }
@@ -585,7 +591,7 @@ impl JX_01 {
 #[cfg(test)]
 pub mod tests {
     use ternary::word::Word;
-    use crate::{cpu::JX_01, isa::{ADD_T, ALU_CTRL_R_RI, ALU_CTRL_R_RR, BEQ_T, BLQ_T, CMP_T, Instr, MUL_T, code::DecEncExt, registers::*}};
+    use crate::{cpu::JX_01, isa::{ADD_T, ALU_CTRL_R_RI, ALU_CTRL_R_RR, BEQ_T, BGT_T, BLQ_T, BLT_T, CMP_T, Instr, MUL_T, SUB_T, code::DecEncExt, decode, encode, registers::*}};
 
     #[test]
     fn test_exec() {
@@ -602,19 +608,19 @@ pub mod tests {
         // 15 mul %RN12, %RN12, %RN13
         // 18 add %RN13, %RN13, %R0, -1
         // 21 bri 9
-        // 24 hlt
+        // 27 hlt
         use Instr::*;
         let instrs = [
-            OPRI(ALU_CTRL_R_RI, ADD_T, NN11, Word::PONE),
-            OPRI(ALU_CTRL_R_RI, ADD_T, NN13, n),
-            OPRI(ALU_CTRL_R_RI, ADD_T, NN12, Word::PONE),
-            OPRR(ALU_CTRL_R_RR, CMP_T, NN13, NN11, Word::ZERO),
-            OPRI(ALU_CTRL_R_RI, BLQ_T, N0, 24.into()),
-            OPRR(ALU_CTRL_R_RR, MUL_T, NN12, NN13, Word::ZERO),
-            OPRR(ALU_CTRL_R_RR, ADD_T, NN13, N0, Word::NONE),
-            OPRR(ALU_CTRL_R_RR, CMP_T, N0, N0, Word::ZERO),
-            OPRI(ALU_CTRL_R_RI, BEQ_T, N0, 9.into()),
-            HALT
+            OPRI(ALU_CTRL_R_RI, ADD_T, NN11, Word::PONE),       // 0 
+            OPRI(ALU_CTRL_R_RI, ADD_T, NN13, n),                // 3 
+            OPRI(ALU_CTRL_R_RI, ADD_T, NN12, Word::PONE),       // 6 
+            OPRR(ALU_CTRL_R_RR, CMP_T, NN13, NN11, Word::ZERO), // 9 
+            OPRI(ALU_CTRL_R_RI, BLQ_T, N0, 27.into()),          // 12
+            OPRR(ALU_CTRL_R_RR, MUL_T, NN12, NN13, Word::ZERO), // 15
+            OPRR(ALU_CTRL_R_RR, ADD_T, NN13, N0, Word::NONE),   // 18
+            OPRR(ALU_CTRL_R_RR, CMP_T, N0, N0, Word::ZERO),     // 21
+            OPRI(ALU_CTRL_R_RI, BEQ_T, N0, 9.into()),           // 24
+            HALT                                                // 27
         ];
 
         // NOTES:
@@ -627,5 +633,18 @@ pub mod tests {
         instrs.check();
 
         let mut cpu = JX_01::new();
+        cpu.import_instrs(&instrs);
+        cpu.run_program();
+
+        let fact = |mut n| {
+            let none = Word::NONE;
+            let mut prod = Word::PONE;
+            while n > Word::ZERO {
+                prod = prod * n;
+                n = n + none;
+            }
+            prod
+        };
+        assert_eq!(cpu.registers.get_word(NN12), fact(n));
     }
 }

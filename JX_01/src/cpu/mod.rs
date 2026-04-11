@@ -123,9 +123,10 @@ impl Default for Status {
             csr: Default::default(),
             ptr: Default::default(),
             psr: Default::default(),
-            sp: Default::default(),
-            bp: Default::default(),
-            ip: Default::default() }
+            sp: Word::MIN,
+            bp: Word::MIN,
+            ip: Word::ZERO,
+        }
     }
 }
 
@@ -147,34 +148,34 @@ pub struct CSR(Word);
 
 impl Default for CSR {
     fn default() -> Self {
-        todo!()
+        CSR(Word::ZERO)
     }
 }
 
 impl CSR {
     pub fn get_carry(&self) -> Trit {
-        unsafe { Trit::from_num(((self.0.num() >> ((WORD_LEN - 1) * 2)) | 0b11) as u8) }
+        unsafe { Trit::from_num(((self.0.num() >> ((WORD_LEN - 1) * 2)) & 0b11) as u8) }
     }
     pub fn get_sign(&self) -> Trit {
-        unsafe { Trit::from_num(((self.0.num() >> ((WORD_LEN - 2) * 2)) | 0b11) as u8) }
+        unsafe { Trit::from_num(((self.0.num() >> ((WORD_LEN - 2) * 2)) & 0b11) as u8) }
     }
     pub fn get_parity(&self) -> Trit {
-        unsafe { Trit::from_num(((self.0.num() >> ((WORD_LEN - 3) * 2)) | 0b11) as u8) }
+        unsafe { Trit::from_num(((self.0.num() >> ((WORD_LEN - 3) * 2)) & 0b11) as u8) }
     }
     pub fn get_interrupt(&self) -> Trit {
-        unsafe { Trit::from_num(((self.0.num() >> ((WORD_LEN - 4) * 2)) | 0b11) as u8) }
+        unsafe { Trit::from_num(((self.0.num() >> ((WORD_LEN - 4) * 2)) & 0b11) as u8) }
     }
     pub fn get_privilege(&self) -> Trit {
-        unsafe { Trit::from_num(((self.0.num() >> ((WORD_LEN - 5) * 2)) | 0b11) as u8) }
+        unsafe { Trit::from_num(((self.0.num() >> ((WORD_LEN - 5) * 2)) & 0b11) as u8) }
     }
     pub fn get_gpu(&self) -> Trit {
-        unsafe { Trit::from_num(((self.0.num() >> ((WORD_LEN - 6) * 2)) | 0b11) as u8) }
+        unsafe { Trit::from_num(((self.0.num() >> ((WORD_LEN - 6) * 2)) & 0b11) as u8) }
     }
     pub fn get_paging(&self) -> Trit {
-        unsafe { Trit::from_num(((self.0.num() >> ((WORD_LEN - 7) * 2)) | 0b11) as u8) }
+        unsafe { Trit::from_num(((self.0.num() >> ((WORD_LEN - 7) * 2)) & 0b11) as u8) }
     }
     pub fn get_interrupt_vector(&self) -> Tryte {
-        unsafe { Tryte::from_num((self.0.num() >> (TRYTE_LEN * 2)) as u32 | TRYTE_BIT_MASK) }
+        unsafe { Tryte::from_num((self.0.num() >> (TRYTE_LEN * 2)) as u32 & TRYTE_BIT_MASK) }
     }
 
     pub fn set_carry(&mut self, val: Trit) {
@@ -191,9 +192,9 @@ impl CSR {
         *self = CSR(
             unsafe {
                 Word::from_u64(
-                ((Word::WORD_BIT_MASK ^ ((Trit::TRIT_BIT_MASK as u64) << ((WORD_LEN - 2) * 2))) &
-                self.0.num()) |
-                ((val as u64) << ((WORD_LEN - 2) * 2)))
+                    (!(0b11 << ((WORD_LEN - 2) * 2)) & self.0.num())
+                    | ((val as u64) << ((WORD_LEN - 2) * 2))
+                )
             }
         );
     }
