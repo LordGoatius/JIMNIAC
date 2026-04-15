@@ -7,7 +7,7 @@ edition = "2024"
 ternary = { path = "../ternary" }
 terscii = { path = "../terscii" }
 septivigntimal = { path = "../septivigntimal" }
-sdl3 = "0.16.1"
+sdl3 = { version = "0.16.1", features = ["test-mode"] }
 crossbeam-utils = "0.8.21"
 
 [features]

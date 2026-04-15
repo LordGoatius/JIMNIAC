@@ -44,7 +44,7 @@ impl JX_01 {
         self.idt_loc = None;
 
         let mut int_ret: Word = Word::ZERO;
-
+        
         #[cfg(test)]
         let mut count = 0;
 
