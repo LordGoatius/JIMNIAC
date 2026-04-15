@@ -1,3 +1,4 @@
+use core::fmt;
 use std::{
     fmt::Debug,
     hash::Hash,
@@ -16,20 +17,15 @@ use crate::{
 #[derive(Clone, Copy)]
 pub struct Tryte(pub(crate) u32);
 
-impl Hash for Tryte {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        state.write_u32(self.num());
+impl fmt::Debug for Tryte {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Word").field(&<Self as Into<isize>>::into(*self)).finish()
     }
 }
 
-impl Debug for Tryte {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(
-            &self
-                .into_iter()
-                .map(<Trit as Into<char>>::into)
-                .collect::<String>(),
-        )
+impl Hash for Tryte {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        state.write_u32(self.num());
     }
 }
 

@@ -1,3 +1,4 @@
+use core::fmt;
 use std::{
     fmt::Display, hash::Hash, hint::unreachable_unchecked, ops::{Add, BitAnd, BitOr, Div, Mul, Neg, Rem, Shl, Shr, Sub}, str::FromStr
 };
@@ -10,8 +11,14 @@ use crate::{
 
 /// I'm manually bit packing this because dependencies are annoying
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct Word(pub(crate) u64);
+
+impl fmt::Debug for Word {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Word").field(&<Self as Into<isize>>::into(*self)).finish()
+    }
+}
 
 impl Default for Word {
     fn default() -> Self {

@@ -45,9 +45,11 @@ pub const EMPTY_PAGE: Page = [Word::ZERO; PAGE_TABLE_SIZE];
 impl Memory {
     pub(crate) fn get_physical_word(&mut self, index: Address) -> &Word {
         // We want the first 7 trits to be zero, but the next 20 to be our type
-        let addr_page = ((index.num() & (0b1111111111111111111111111111111111111111 << 14))
-            | (Word::ZERO.num() & 0b11111111111111))
-            & Word::WORD_BIT_MASK;
+        let addr_page =
+            (
+                (index.num() & (0b1111111111111111111111111111111111111111 << 14))
+                | (Word::ZERO.num() & 0b11111111111111)
+            ) & Word::WORD_BIT_MASK;
         let addr_elem = unsafe {
             Word::from_u64(
                 ((index.num() & 0b11111111111111) | (Word::ZERO.num() << 14)) & Word::WORD_BIT_MASK,
@@ -70,20 +72,30 @@ impl Memory {
         // };
 
         let index: isize = addr_elem.into();
-        let index = index + (729 / 2);
+        let index = (index / 3) + (729 / 2);
         &page[index as usize]
     }
 
     pub(crate) fn get_physical_word_mut(&mut self, index: Address) -> &mut Word {
         // We want the first 7 trits to be zero, but the next 20 to be our type
-        let addr_page = ((index.num() & (0b1111111111111111111111111111111111111111 << 14))
-            | (Word::ZERO.num() & 0b11111111111111))
-            & Word::WORD_BIT_MASK;
+        let addr_page =
+            (
+                (index.num() & (0b1111111111111111111111111111111111111111 << 14))
+                | (Word::ZERO.num() & 0b11111111111111)
+            ) & Word::WORD_BIT_MASK;
         let addr_elem = unsafe {
             Word::from_u64(
                 ((index.num() & 0b11111111111111) | (Word::ZERO.num() << 14)) & Word::WORD_BIT_MASK,
             )
         };
+        // let addr_page = ((index.num() & (0b1111111111111111111111111111111111111111 << 14))
+        //     | (Word::ZERO.num() & 0b11111111111111))
+        //     & Word::WORD_BIT_MASK;
+        // let addr_elem = unsafe {
+        //     Word::from_u64(
+        //         ((index.num() & 0b11111111111111) | (Word::ZERO.num() << 14)) & Word::WORD_BIT_MASK,
+        //     )
+        // };
 
         let page = if self.memory.contains_key(&addr_page) {
             self.memory.get_mut(&addr_page).unwrap()
@@ -101,7 +113,7 @@ impl Memory {
         // };
 
         let index: isize = addr_elem.into();
-        let index = index + (729 / 2);
+        let index = (index / 3) + (729 / 2);
         &mut page[index as usize]
     }
 }

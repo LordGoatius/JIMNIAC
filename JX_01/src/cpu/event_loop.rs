@@ -20,8 +20,8 @@ impl JX_01 {
             csr: CSR(Word::ZERO),
             ptr: Word::ZERO,
             psr: Word::ZERO,
-            sp: Word::ZERO,
-            bp: Word::ZERO,
+            sp: Word::MIN,
+            bp: Word::MIN,
             ip: Word::ZERO,
         };
         // Option<Gpu>
@@ -106,21 +106,21 @@ impl JX_01 {
                     self.status.sp = self.status.sp + (Word::PONE << 1);
                 },
                 POCSR => {
-                    self.registers.set_word(N13, *self.memory.get_physical_word(self.status.sp));
                     self.status.ip = self.status.ip + (Word::PONE << 1);
                     self.status.sp = self.status.sp - (Word::PONE << 1);
+                    self.registers.set_word(N13, *self.memory.get_physical_word(self.status.sp));
                     
                 },
                 POPSR => {
-                    self.registers.set_word(N12, *self.memory.get_physical_word(self.status.sp));
                     self.status.ip = self.status.ip + (Word::PONE << 1);
                     self.status.sp = self.status.sp - (Word::PONE << 1);
+                    self.registers.set_word(N12, *self.memory.get_physical_word(self.status.sp));
                     
                 },
                 POPTR => {
-                    self.registers.set_word(N11, *self.memory.get_physical_word(self.status.sp));
                     self.status.ip = self.status.ip + (Word::PONE << 1);
                     self.status.sp = self.status.sp - (Word::PONE << 1);
+                    self.registers.set_word(N11, *self.memory.get_physical_word(self.status.sp));
                     
                 },
                 LPT(reg) => {
@@ -135,22 +135,47 @@ impl JX_01 {
                 // For full compliance/optimization, make them identical with different meanings
                 OPRR(ctrl, op, reg1, reg2, imm) => self.execute_rr_op(op, ctrl, reg1, reg2, imm),
                 OPRI(ctrl, op, reg, imm) => self.execute_ri_op(op, ctrl, reg, imm),
-                // Call calls (jumps to addr in rn13)
-                CALL(reg, ctrl, imm) => (),
-                // Retun jumps to value in rn13
-                RET => (),
-                // Enter:
-                // - Push next IP to stack
-                // - Push BP to stack
-                // - Move BP to after prev BP location
-                // - Move SP to base pointer
-                ENTER => (),
-                // Leave:
-                // - Move SP to BP location
-                // - Pop prev BP to BP
-                // - Pop prev IP to SP
-                LEAVE => (),
-                INVALID => (),
+                // Call calls (jumps to addr in reg + imm), sets up stack frame
+                // NOTE: Stack pointer points to next location to be pushed to. If SP == BP, nothing is on the stack.
+                CALL(reg, _ctrl, imm) => {
+                    // Stack moves downwards
+                    // Pushes BP
+                    // Pushes Prev IP
+                    // Moves BP to SP
+                    // Jumps to Location
+
+                    // Push BP
+                    *self.memory.get_physical_word_mut(self.status.sp) = self.status.bp;
+                    self.status.sp = self.status.sp + (Word::PONE << 1);
+
+                    // Push IP
+                    *self.memory.get_physical_word_mut(self.status.sp) = self.status.ip + (Word::PONE << 1);
+                    self.status.sp = self.status.sp + (Word::PONE << 1);
+
+                    // Moves BP to SP
+                    self.status.bp = self.status.sp;
+
+                    // Jumps to loc at reg + imm
+                    self.status.ip = self.registers.get_word(reg) + imm;
+                },
+                RET => {
+                    // Moves SP to BP
+                    // Pops old IP to IP
+                    // Pops BP to BP
+                    // Continues with new IP
+                    self.status.sp = self.status.bp;
+
+                    // Pop IP
+                    self.status.sp = self.status.sp - (Word::PONE << 1);
+                    self.status.ip = *self.memory.get_physical_word_mut(self.status.sp);
+
+                    // Pop BP
+                    self.status.sp = self.status.sp - (Word::PONE << 1);
+                    self.status.bp = *self.memory.get_physical_word_mut(self.status.sp);
+                },
+                ENTER => panic!("Do not use: outdated"),
+                LEAVE => panic!("Do not use: outdated"),
+                INVALID => panic!("Invalid"),
             }
         }
         println!("CPU Program Halted.")
@@ -280,7 +305,8 @@ impl JX_01 {
                 ip = self.status.ip + (Word::PONE << 1);
             }
             MUL => {
-                let val = reg1_val * (reg2_val + imm);
+                let val = dbg!(reg1_val) * dbg!(reg2_val + imm);
+                dbg!(<Word as Into<isize>>::into(val));
                 self.registers.set_word(reg1, val);
                 ip = self.status.ip + (Word::PONE << 1);
             }
@@ -336,27 +362,17 @@ impl JX_01 {
             //  [R] + ([R] * imm)
             // ONLY SUPPORTING WORD SIZE VALUES RIGHT NOW
             PUSH => {
-                // TODO: Memory write
                 *self.memory.get_physical_word_mut(sp) = reg1_val + (reg2_val * imm);
                 ip = self.status.ip + (Word::PONE << 1);
                 sp = self.status.sp + (Word::PONE << 1);
             }
             POP => {
-                // TODO: Memory write
-                self.registers.set_word(reg1, *self.memory.get_physical_word(sp));
                 ip = self.status.ip + (Word::PONE << 1);
                 sp = self.status.sp - (Word::PONE << 1);
+                self.registers.set_word(reg1, *self.memory.get_physical_word(sp));
             }
-            CALL => {
-                ip = self.status.ip + (Word::PONE << 1);
-            }
-            RET => {
-                // TODO:
-                // - Move SP to BP location
-                // - Pop prev BP to BP
-                // - Pop prev IP to SP
-                ip = self.status.ip + (Word::PONE << 1);
-            }
+            CALL => panic!("invalid instr"),
+            RET => panic!("invalid instr"),
             _ => unsafe { unreachable_unchecked() },
         }
         self.status.ip = ip;
@@ -542,25 +558,26 @@ impl JX_01 {
             //  [R] + ([R] * imm)
             // ONLY SUPPORTING WORD SIZE VALUES RIGHT NOW
             PUSH => {
-                // TODO: Memory write
                 *self.memory.get_physical_word_mut(sp) = reg_val + imm;
                 ip = self.status.ip + (Word::PONE << 1);
                 sp = self.status.sp + (Word::PONE << 1);
             }
             POP => {
-                // TODO: Memory write
-                self.registers.set_word(reg, *self.memory.get_physical_word(sp));
                 ip = self.status.ip + (Word::PONE << 1);
                 sp = self.status.sp - (Word::PONE << 1);
+                self.registers.set_word(reg, *self.memory.get_physical_word(sp));
             }
             // Setup the new stack frame
             CALL => {
-                ip = self.status.ip + (Word::PONE << 1);
+                panic!("Unused Op");
             }
             RET => {
-                ip = self.status.ip + (Word::PONE << 1);
+                panic!("Unused Op");
             }
-            _ => unsafe { unreachable_unchecked() },
+            val => unsafe {
+                println!("{val}");
+                unreachable_unchecked();
+            },
         }
         self.status.ip = ip;
         self.status.sp = sp;
@@ -591,7 +608,7 @@ impl JX_01 {
 #[cfg(test)]
 pub mod tests {
     use ternary::word::Word;
-    use crate::{cpu::JX_01, isa::{ADD_T, ALU_CTRL_R_RI, ALU_CTRL_R_RR, BEQ_T, BGT_T, BLQ_T, BLT_T, CMP_T, Instr, MUL_T, SUB_T, code::DecEncExt, decode, encode, registers::*}};
+    use crate::{cpu::JX_01, isa::{ADD_T, ALU_CTRL_R_RI, ALU_CTRL_R_RR, BEQ_T, BGT_T, BLQ_T, BLT_T, CALL_CTRL_R, CMP_T, Instr, MUL_T, POP_T, PUSH_T, SUB_T, code::DecEncExt, decode, encode, registers::*}};
 
     #[test]
     fn test_exec() {
@@ -646,5 +663,86 @@ pub mod tests {
             prod
         };
         assert_eq!(cpu.registers.get_word(NN12), fact(n));
+    }
+
+
+    #[test]
+    fn test_func() {
+        use Instr::*;
+        let n: Word = 6.into();
+
+        // 00 mov  %RN11, 2
+        // 03 mov  %RN13, n
+        // 06 call fact; when return, halt
+        // 09 cmp %R0, %R0
+        // 12 b hlt
+        //  ; fact(n)
+        //  ; ARG: RN13
+        //  ; RET: RN12
+        //    fact:
+        // 15     cmp  %RN13, %RN11
+        // 18     bgt  calcs
+        // 21     mov  %RN12, 2
+        // 24     cmp  %R0, %R0
+        // 27     b return
+        //    calcs:
+        //        ; move argument onto stack
+        // 30     push %RN13
+        //        ; subtract one from argument
+        // 33     add  %RN13, -1
+        // 36     call fact ; (call fact)
+        //        ; value will be in %RN12
+        // 39     pop %RN10
+        //        ; multiply return value with value on the stack
+        // 42     mul %RN12, %RN12, %RN10
+        //    return:
+        // 45     ret
+        //
+        //    hlt:
+        // 48     hlt
+        let instrs = [
+            /* 00 */ OPRI(ALU_CTRL_R_RI, ADD_T, NN11, 2.into()),
+            /* 03 */ OPRI(ALU_CTRL_R_RI, ADD_T, NN13, n.into()),
+            /* 06 */ CALL(N0, CALL_CTRL_R, 15.into()),
+            /* 09 */ OPRR(ALU_CTRL_R_RR, CMP_T, N0, N0, Word::ZERO),
+            /* 12 */ OPRI(ALU_CTRL_R_RI, BEQ_T, N0, 48.into()),
+            // fact:
+            /* 15 */ OPRR(ALU_CTRL_R_RR, CMP_T, NN13, NN11, Word::ZERO),
+            /* 18 */ OPRI(ALU_CTRL_R_RI, BGT_T, N0, 30.into()),
+            /* 21 */ OPRI(ALU_CTRL_R_RI, ADD_T, NN12, 2.into()),
+            /* 24 */ OPRR(ALU_CTRL_R_RR, CMP_T, N0, N0, Word::ZERO),
+            /* 27 */ OPRI(ALU_CTRL_R_RI, BEQ_T, N0, 45.into()),
+            // calcs:
+            /* 30 */ OPRI(ALU_CTRL_R_RI, PUSH_T, NN13, Word::ZERO),
+            /* 33 */ OPRI(ALU_CTRL_R_RI, ADD_T, NN13, Word::NONE),
+            /* 36 */ CALL(N0, CALL_CTRL_R, 15.into()),
+            /* 39 */ OPRI(ALU_CTRL_R_RI, POP_T, NN10, Word::ZERO),
+            /* 42 */ OPRR(ALU_CTRL_R_RR, MUL_T, NN12, NN10, Word::ZERO),
+            // return:
+            /* 45 */ RET,
+            /* 48 */ HALT,
+        ];
+
+        instrs.check();
+
+        let mut cpu = JX_01::new();
+        cpu.import_instrs(&instrs);
+        cpu.run_program();
+
+
+        let fact = |mut n| {
+            let none = Word::NONE;
+            let mut prod = Word::PONE;
+            while n > Word::ZERO {
+                prod = prod * n;
+                n = n + none;
+            }
+            prod
+        };
+        let val = cpu.registers.get_word(NN12);
+        let num_val: isize = val.into();
+
+        println!("{num_val}");
+        assert_eq!(val, fact(n));
     }
 }
