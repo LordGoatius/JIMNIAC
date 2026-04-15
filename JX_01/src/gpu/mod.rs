@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use sdl3::{Sdl, pixels::Color, render::Canvas, video::Window};
 use ternary::{trits::Trit, word::Word};
 
@@ -12,7 +14,20 @@ pub struct Gpu {
     gpu_state: Word, // temp
     // External SDL
     canvas: Canvas<Window>,
-    sdl: Sdl,
+    pub(crate) sdl: Sdl,
+}
+
+impl Debug for Gpu {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Gpu")
+            .field("vector_buffer", &self.vector_buffer)
+            .field("vector_buffer_size", &self.vector_buffer_size)
+            .field("event_loop_callback", &self.event_loop_callback)
+            .field("gpu_state", &self.gpu_state)
+            .field_with("canvas", |f| write!(f, "Canvas"))
+            .field_with("sdl", |f| write!(f, "sdl"))
+            .finish()
+    }
 }
 
 impl Gpu {
@@ -99,7 +114,7 @@ impl Gpu {
         self.canvas.draw_line((x_1, 729.0 - y_1), (x_2, 729.0 - y_2)).unwrap();
     }
 
-    fn draw(&mut self, word: Word) {
+    pub fn draw(&mut self, word: Word) {
         let coord: [Trit; 27] = word.into();
         // of size 3
         let color: &[Trit] = &coord[(27 - 3)..];
@@ -118,6 +133,10 @@ impl Gpu {
         unsafe {
             self.draw_line(&coord[0..12], &coord[12..24], color);
         }
+    }
+
+    pub fn present(&mut self) {
+        self.canvas.present();
     }
 }
 
@@ -154,61 +173,64 @@ pub mod tests {
 
         gpu.reset_canvas();
 
-        let coord1: Word = {
-            use Trit::*;
-            [
-             POne, POne, POne, POne, POne, POne, POne, POne, POne, POne, POne, POne,
-             NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne,
-             POne, Zero, Zero
-            ].into()
-        };
+        pub fn take_gpu(mut gpu: Gpu) {
+            let coord1: Word = {
+                use Trit::*;
+                [
+                 POne, POne, POne, POne, POne, POne, POne, POne, POne, POne, POne, POne,
+                 NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne,
+                 POne, Zero, Zero
+                ].into()
+            };
 
-        let coord2: Word = {
-            use Trit::*;
-            [
-             POne, POne, POne, POne, POne, POne,
-             NOne, NOne, NOne, NOne, NOne, NOne,
-             NOne, NOne, NOne, NOne, NOne, NOne,
-             POne, POne, POne, POne, POne, POne,
-             Zero, POne, Zero
-            ].into()
-        };
+            let coord2: Word = {
+                use Trit::*;
+                [
+                 POne, POne, POne, POne, POne, POne,
+                 NOne, NOne, NOne, NOne, NOne, NOne,
+                 NOne, NOne, NOne, NOne, NOne, NOne,
+                 POne, POne, POne, POne, POne, POne,
+                 Zero, POne, Zero
+                ].into()
+            };
 
-        let coord3: Word = {
-            use Trit::*;
-            [
-             Zero, Zero, Zero, Zero, Zero, Zero,
-             POne, POne, POne, POne, POne, POne,
-             Zero, Zero, Zero, Zero, Zero, Zero,
-             NOne, NOne, NOne, NOne, NOne, NOne,
-             Zero, Zero, POne
-            ].into()
-        };
+            let coord3: Word = {
+                use Trit::*;
+                [
+                 Zero, Zero, Zero, Zero, Zero, Zero,
+                 POne, POne, POne, POne, POne, POne,
+                 Zero, Zero, Zero, Zero, Zero, Zero,
+                 NOne, NOne, NOne, NOne, NOne, NOne,
+                 Zero, Zero, POne
+                ].into()
+            };
 
-        gpu.draw(coord1);
-        gpu.draw(coord2);
-        gpu.draw(coord3);
+            gpu.draw(coord1);
+            gpu.draw(coord2);
+            gpu.draw(coord3);
 
-        gpu.canvas.present();
+            gpu.canvas.present();
 
-        let mut count = 0;
+            let mut count = 0;
 
-        'running: loop {
-            for event in gpu.sdl.event_pump().unwrap().poll_iter() {
-                match event {
-                    Event::Quit { .. }
-                    | Event::AppTerminating { .. }
-                    | Event::KeyDown {
-                        keycode: Some(Keycode::Escape | Keycode::Q),
-                        ..
-                    } => break 'running,
-                    _ => {
-                        gpu.canvas.present();
-                        std::thread::sleep(Duration::from_millis(50));
-                        if count > 10 { break 'running; } else { count += 1; }
+            'running: loop {
+                for event in gpu.sdl.event_pump().unwrap().poll_iter() {
+                    match event {
+                        Event::Quit { .. }
+                        | Event::AppTerminating { .. }
+                        | Event::KeyDown {
+                            keycode: Some(Keycode::Escape | Keycode::Q),
+                            ..
+                        } => break 'running,
+                        _ => {
+                            gpu.canvas.present();
+                            std::thread::sleep(Duration::from_millis(50));
+                            if count > 10 { break 'running; } else { count += 1; }
+                        }
                     }
                 }
             }
         }
+        take_gpu(gpu);
     }
 }

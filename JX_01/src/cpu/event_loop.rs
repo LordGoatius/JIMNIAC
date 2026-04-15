@@ -1,11 +1,12 @@
 use std::{hint::unreachable_unchecked, sync::atomic::Ordering};
 
-use ternary::{prelude::Word, trits::Trit};
+use sdl3::{event::Event, keyboard::Keycode};
+use ternary::{prelude::Word, trits::Trit, tryte::Tryte};
 
 use crate::{
     cpu::{CSR, JX_01, Status}, gpu::Gpu, isa::{
         self,
-        registers::{N11, N12, N13, NN11, NN12, NN13, RN11, Register},
+        registers::*,
         *,
     }, ports::Ports
 };
@@ -14,7 +15,10 @@ impl JX_01 {
     pub fn run_program(&mut self) {
         // Initalize multi-threaded portions here
         // Ports
-        self.ports = Some(Ports::init(self.interrupt.clone(), self.interrupt_num.clone()));
+        self.ports = Some(
+            Ports::init(self.interrupt.clone(), self.interrupt_num.clone())
+        );
+
         // A program must setup the stack and base pointer
         self.status = Status {
             csr: CSR(Word::ZERO),
@@ -24,8 +28,10 @@ impl JX_01 {
             bp: Word::MIN,
             ip: Word::ZERO,
         };
+
         // Option<Gpu>
         self.gpu = None;
+
         struct IntStatus {
             enabled: bool,
             waiting: bool,
@@ -35,60 +41,190 @@ impl JX_01 {
             enabled: true,
             waiting: false,
         };
+        self.idt_loc = None;
+
+        let mut int_ret: Word = Word::ZERO;
+
+        #[cfg(test)]
+        let mut count = 0;
 
         loop {
             use Instr::*;
+
+            // Check for status here: Interrupts
+            if let Some(int) = self.interrupt() && int_status.enabled {
+                int_status.waiting &= false;
+                int_status.enabled &= false;
+
+                if let Some(idt) = dbg!(self.idt_loc) {
+                    int_ret = self.status.ip;
+                    let int_addr = dbg!(idt + (<Tryte as Into<Word>>::into(int) << 1));
+                    self.status.ip = dbg!(*self.memory.get_physical_word(int_addr));
+                } else {
+                    panic!("Must load an IDT before handling interrupts")
+                }
+            } else if int_status.waiting {
+                continue;
+            }
+
+            // It would be nice if I could run this as ternary firmware...
+            // NOTE: Next time, use ternary firmware :)
+            if let Some(gpu) = dbg!(self.gpu.as_mut()) {
+                let vblen: isize = gpu.vector_buffer_size.into();
+                assert!(vblen > 0, "vactor buffer len cannot be less than 0");
+                let vbaddr: isize = gpu.vector_buffer.into();
+
+                gpu.reset_canvas();
+
+                for i in 0..vblen {
+                    let line = dbg!(self.memory.get_physical_word_mut((vbaddr + (i * 3)).into()));
+                    gpu.draw(*line);
+                }
+
+                gpu.present();
+
+                // TODO: Fix properly later
+                for event in gpu.sdl.event_pump().unwrap().poll_iter() {
+                    match event {
+                        Event::Quit { .. }
+                        | Event::AppTerminating { .. }
+                        | Event::KeyDown {
+                            keycode: Some(Keycode::Escape),
+                            ..
+                        } => return,
+                        Event::KeyDown {
+                            keycode: Some(code),
+                            ..
+                        } => {
+                            use terscii::TERSCII;
+                            let terscii = match code {
+                                Keycode::Space => Some(TERSCII::SP),
+                                Keycode::_0 => Some(TERSCII::Zero),
+                                Keycode::_1 => Some(TERSCII::One),
+                                Keycode::_2 => Some(TERSCII::Two),
+                                Keycode::_3 => Some(TERSCII::Three),
+                                Keycode::_4 => Some(TERSCII::Four),
+                                Keycode::_5 => Some(TERSCII::Five),
+                                Keycode::_6 => Some(TERSCII::Six),
+                                Keycode::_7 => Some(TERSCII::Seven),
+                                Keycode::_8 => Some(TERSCII::Eight),
+                                Keycode::_9 => Some(TERSCII::Nine),
+                                Keycode::Colon => Some(TERSCII::COLON),
+                                Keycode::Semicolon => Some(TERSCII::SEMICOLON),
+                                Keycode::Less => Some(TERSCII::LANGLE),
+                                Keycode::Equals => Some(TERSCII::EQUAL),
+                                Keycode::Greater => Some(TERSCII::RANGLE),
+                                Keycode::Question => Some(TERSCII::Question),
+                                Keycode::At => Some(TERSCII::AT),
+                                Keycode::LeftBracket => Some(TERSCII::LBRACK),
+                                Keycode::Backslash => Some(TERSCII::BSLASH),
+                                Keycode::RightBracket => Some(TERSCII::RBRACK),
+                                Keycode::Caret => Some(TERSCII::CARET),
+                                Keycode::Underscore => Some(TERSCII::UNDERSCORE),
+                                Keycode::A => Some(TERSCII::A),
+                                Keycode::B => Some(TERSCII::B),
+                                Keycode::C => Some(TERSCII::C),
+                                Keycode::D => Some(TERSCII::D),
+                                Keycode::E => Some(TERSCII::E),
+                                Keycode::F => Some(TERSCII::F),
+                                Keycode::G => Some(TERSCII::G),
+                                Keycode::H => Some(TERSCII::H),
+                                Keycode::I => Some(TERSCII::I),
+                                Keycode::J => Some(TERSCII::J),
+                                Keycode::K => Some(TERSCII::K),
+                                Keycode::L => Some(TERSCII::L),
+                                Keycode::M => Some(TERSCII::M),
+                                Keycode::N => Some(TERSCII::N),
+                                Keycode::O => Some(TERSCII::O),
+                                Keycode::P => Some(TERSCII::P),
+                                Keycode::Q => Some(TERSCII::Q),
+                                Keycode::R => Some(TERSCII::R),
+                                Keycode::S => Some(TERSCII::S),
+                                Keycode::T => Some(TERSCII::T),
+                                Keycode::U => Some(TERSCII::U),
+                                Keycode::V => Some(TERSCII::V),
+                                Keycode::W => Some(TERSCII::W),
+                                Keycode::X => Some(TERSCII::X),
+                                Keycode::Y => Some(TERSCII::Y),
+                                Keycode::Z => Some(TERSCII::Z),
+                                _ => None,
+                            };
+                            if let Some(terscii) = terscii {
+                                if let Some(ports) = self.ports.as_mut() {
+                                    let port = &mut ports.ports[1];
+                                    port.store(<TERSCII as Into<Word>>::into(terscii).num(), Ordering::Release);
+                                    ports.interrupts.store(true, Ordering::Release);
+                                    ports.interrupt_num.store(Tryte::PONE.num(), Ordering::Release);
+                                }
+                            }
+                        }
+                        _ => {
+                            #[cfg(test)]
+                            if count == 20 {
+                                return;
+                            }
+                            gpu.present();
+                            #[cfg(test)]
+                            {
+                                count += 1;
+                            }
+                        }
+                    }
+                }
+            }
 
             let instruction_ptr = self.status.ip;
             let _instr_ptr: isize = dbg!(instruction_ptr.into());
 
             let instruction = *self.memory.get_physical_word(instruction_ptr);
-            // Check for status here: Interrupts
-            if let Some(int) = self.interrupt() && int_status.enabled {
-                // interrupt logic
-            } else if int_status.waiting {
-                continue;
-            }
-
             match dbg!(isa::decode(instruction)) {
                 HALT => break,
-                DTI => int_status.enabled = false,
-                STI => int_status.enabled = true,
-                WFI => int_status.waiting = true,
-                RTI => {
-                    // store return address when exceptions occur and return.
-                    // Don't manage the stack or registers.
-                    todo!()
+                DTI => {
+                    todo!();
+                    int_status.enabled = false;
+                    self.status.ip = self.status.ip + (Word::PONE << 1);
                 },
-                LIT(reg) => match self.idt_loc.as_mut() {
-                    Some(loc) => {
-                        *loc = self.registers.get_word(reg);
-                        println!("Idt loaded at {loc}")
-                    },
-                    None => {
-                        println!("Interrupt without IDT: Unrecoverable Fault");
-                        break;
-                    },
+                STI => {
+                    todo!();
+                    int_status.enabled = true;
+                    self.status.ip = self.status.ip + (Word::PONE << 1);
+                },
+                WFI => {
+                    todo!();
+                    int_status.waiting = true;
+                    self.status.ip = self.status.ip + (Word::PONE << 1);
+                },
+                RTI => {
+                    self.status.ip = int_ret;
+                    int_status.enabled = true;
+                    self.interrupt.store(false, Ordering::Release);
+                },
+                LIT(reg) => {
+                    self.idt_loc = dbg!(Some(self.registers.get_word(reg)));
+                    self.status.ip = self.status.ip + (Word::PONE << 1);
                 },
                 INTERRUPT(int) => {
-                    // TODO: Valid user int checks.
                     self.interrupt.store(true, Ordering::Release);
-                    self.interrupt_num.store(int.num(), Ordering::Release);
+                    self.interrupt_num.store(unsafe { std::mem::transmute(int) }, Ordering::Release);
+                    self.status.ip = self.status.ip + (Word::PONE << 1);
                 },
                 EGPU(reg) => {
                     let addr = self.registers.get_word(reg);
                     self.gpu = Some(Gpu::from_addr(addr, &mut self.memory));
+                    self.status.ip = self.status.ip + (Word::PONE << 1);
                 },
                 LVB(reg, imm) => {
                     self.gpu.iter_mut().for_each(|gpu| {
                         gpu.vector_buffer = self.registers.get_word(reg);
                         gpu.vector_buffer_size = imm;
                     });
+                    self.status.ip = self.status.ip + (Word::PONE << 1);
                 },
                 EGEL(reg) => {
                     self.gpu.iter_mut().for_each(|gpu| {
                         gpu.event_loop_callback = Some(self.registers.get_word(reg))
                     });
+                    self.status.ip = self.status.ip + (Word::PONE << 1);
                 },
                 PCSR => {
                     *self.memory.get_physical_word_mut(self.status.sp) = self.status.csr.0;
@@ -126,11 +262,28 @@ impl JX_01 {
                 LPT(reg) => {
                     self.page_table = Some(self.registers.get_word(reg));
                 },
-                INTM(imm) => (),
-                INTE(imm) => (),
-                INTS(imm) => (),
-                IN(reg, ctrl, imm) => (),
-                OUT(reg, ctrl, imm) => (),
+                INTM(_imm) => todo!("Interrupt masking not supported"),
+                INTE(_imm) => todo!("Interrupt masking not supported"),
+                INTS(_imm) => todo!("Interrupt masking not supported"),
+                IN(reg, _ctrl, imm) => {
+                    if let Some(ports) = self.ports.as_mut() {
+                        let index: isize = imm.into();
+                        assert!(index > 0, "Not using negative ports yet");
+                        let port = &mut ports.ports[index as usize];
+                        self.registers.set_word(reg, unsafe {
+                            Word::from_u64(port.load(Ordering::Acquire))
+                        });
+                    }
+                },
+                OUT(reg, _ctrl, imm) => {
+                    if let Some(ports) = self.ports.as_mut() {
+                        let index: isize = imm.into();
+                        assert!(index > 0, "Not using negative ports yet");
+                        let port = &mut ports.ports[index as usize];
+                        let val = self.registers.get_word(reg);
+                        port.store(val.num(), Ordering::Release);
+                    }
+                },
                 // Unused: Don't use OP CALL/RET
                 // For full compliance/optimization, make them identical with different meanings
                 OPRR(ctrl, op, reg1, reg2, imm) => self.execute_rr_op(op, ctrl, reg1, reg2, imm),
@@ -178,7 +331,7 @@ impl JX_01 {
                 INVALID => panic!("Invalid"),
             }
         }
-        println!("CPU Program Halted.")
+        println!("CPU Program Halted.");
     }
 
     /// Documentation for ALU
@@ -607,7 +760,7 @@ impl JX_01 {
 
 #[cfg(test)]
 pub mod tests {
-    use ternary::word::Word;
+    use ternary::{trits::Trit, word::Word};
     use crate::{cpu::JX_01, isa::{ADD_T, ALU_CTRL_R_RI, ALU_CTRL_R_RR, BEQ_T, BGT_T, BLQ_T, BLT_T, CALL_CTRL_R, CMP_T, Instr, MUL_T, POP_T, PUSH_T, SUB_T, code::DecEncExt, decode, encode, registers::*}};
 
     #[test]
@@ -740,9 +893,146 @@ pub mod tests {
             prod
         };
         let val = cpu.registers.get_word(NN12);
-        let num_val: isize = val.into();
 
-        println!("{num_val}");
         assert_eq!(val, fact(n));
+    }
+
+    #[test]
+    fn test_exec_gpu() {
+        use Instr::*;
+
+        let coord1: Word = {
+            use Trit::*;
+            [
+             POne, POne, POne, POne, POne, POne, POne, POne, POne, POne, POne, POne,
+             NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne,
+             POne, Zero, Zero
+            ].into()
+        };
+
+        let coord2: Word = {
+            use Trit::*;
+            [
+             POne, POne, POne, POne, POne, POne,
+             NOne, NOne, NOne, NOne, NOne, NOne,
+             NOne, NOne, NOne, NOne, NOne, NOne,
+             POne, POne, POne, POne, POne, POne,
+             Zero, POne, Zero
+            ].into()
+        };
+
+        let coord3: Word = {
+            use Trit::*;
+            [
+             Zero, Zero, Zero, Zero, Zero, Zero,
+             POne, POne, POne, POne, POne, POne,
+             Zero, Zero, Zero, Zero, Zero, Zero,
+             NOne, NOne, NOne, NOne, NOne, NOne,
+             Zero, Zero, POne
+            ].into()
+        };
+
+        let mut vec_data = vec![
+            coord1, coord2, coord3
+        ];
+
+        const INSTRS_LEN: usize = 3;
+        let instrs: [Instr; INSTRS_LEN];
+
+        let gpuaddr: Word = (((vec_data.len() + INSTRS_LEN) * 3) as isize).into();
+
+        instrs = [
+            OPRI(ALU_CTRL_R_RI, ADD_T, N1, gpuaddr),
+            EGPU(N1),
+            OPRI(ALU_CTRL_R_RI, BEQ_T, N0, 6.into()),
+        ];
+
+        let vbsize: Word = 3.into();
+        let vbaddr: Word = ((instrs.len() * 3) as isize).into();
+
+        instrs.check();
+
+        let mut data: Vec<Word> = instrs.into_iter().map(encode).collect();
+
+        // 00 instr[0]
+        // 03 instr[1]
+        // 06 instr[2]
+        // 09 data[0]
+        // 12 data[1]
+        // 15 data[2]
+        // 18 1 addr, 1 word
+        // 21 1 size, 1 word
+
+        data.append(&mut vec_data);
+        assert!(data.len() == 6);
+        data.push(vbaddr);
+        data.push(vbsize);
+
+        let mut cpu = JX_01::new();
+        cpu.import_memory(&data);
+        cpu.run_program();
+    }
+
+    #[test]
+    fn test_interrupt() {
+        use Instr::*;
+
+        //     main:
+        // 00     mov %r1, idt
+        // 03     lidt %r1
+        // 06     int 1
+        // 09     int 2
+        // 12     int 3
+        // 15     halt
+        //     int1:
+        // 18     mov %rn11, 1
+        // 21     rti
+        //     int2:
+        // 24     mov %rn12, 2
+        // 27     rti
+        //     int3:
+        // 30     mov %rn13, 3
+        // 33     rti
+        //     idt:
+        // 36     word 0
+        // 39     word int1
+        // 42     word int2
+        // 45     word int3
+        const IDT_LOC: isize = 36;
+
+        let instrs = [
+            OPRI(ALU_CTRL_R_RI, ADD_T, N1, IDT_LOC.into()),
+            LIT(N1),
+            INTERRUPT(1.into()),
+            INTERRUPT(2.into()),
+            INTERRUPT(3.into()),
+            HALT,
+            OPRI(ALU_CTRL_R_RI, ADD_T, NN11, 1.into()),
+            RTI,
+            OPRI(ALU_CTRL_R_RI, ADD_T, NN12, 2.into()),
+            RTI,
+            OPRI(ALU_CTRL_R_RI, ADD_T, NN13, 3.into()),
+            RTI,
+        ];
+
+        let mut idt: Vec<Word> = vec![
+            Word::ZERO,
+            18.into(),
+            24.into(),
+            30.into(),
+        ];
+
+        instrs.check();
+
+        let mut data: Vec<Word> = instrs.into_iter().map(encode).collect();
+        data.append(&mut idt);
+
+        let mut cpu = JX_01::new();
+        cpu.import_memory(&data);
+        cpu.run_program();
+
+        assert_eq!(cpu.registers.get_word(NN11), 1.into());
+        assert_eq!(cpu.registers.get_word(NN12), 2.into());
+        assert_eq!(cpu.registers.get_word(NN13), 3.into());
     }
 }

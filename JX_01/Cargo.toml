@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 ternary = { path = "../ternary" }
+terscii = { path = "../terscii" }
 septivigntimal = { path = "../septivigntimal" }
 sdl3 = "0.16.1"
 crossbeam-utils = "0.8.21"

@@ -1,3 +1,4 @@
+#![feature(debug_closure_helpers)]
 #![allow(nonstandard_style)]
 pub mod memory;
 pub mod isa;

@@ -10,6 +10,7 @@ dependencies = [
  "sdl3",
  "septivigntimal",
  "ternary",
+ "terscii",
 ]
 
 [[package]]

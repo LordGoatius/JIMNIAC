@@ -9,9 +9,9 @@ pub struct Ports {
     // capabilities for custom types isn't quite there yet
     // NOTE: Don't care about cache contention here. I don't expect more than
     // one port to be used for this version.
-    ports: [AtomicU64; Tryte::TRYTE_SIZE],
-    interrupts: Arc<CachePadded<AtomicBool>>,
-    interrupt_num: Arc<CachePadded<AtomicU32>>,
+    pub(crate) ports: [AtomicU64; Tryte::TRYTE_SIZE],
+    pub(crate) interrupts: Arc<CachePadded<AtomicBool>>,
+    pub(crate) interrupt_num: Arc<CachePadded<AtomicU32>>,
 }
 
 impl Ports {

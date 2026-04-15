@@ -30,11 +30,11 @@ pub struct JX_01 {
 impl JX_01 {
     fn interrupt(&self) -> Option<Tryte> {
         if self.interrupt.load(Ordering::Acquire) {
-            None
-        } else {
             Some(unsafe {
                 mem::transmute(self.interrupt_num.load(Ordering::Acquire))
             })
+        } else {
+            None
         }
     }
 
