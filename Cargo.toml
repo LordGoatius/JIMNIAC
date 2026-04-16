@@ -1,5 +1,9 @@
 [workspace]
 resolver = "3"
 members = [
-"ternary", "terscii", "septivigntimal"
-, "JX_01"]
+"ternary", "terscii", "septivigntimal", "JX_01", "jxasm"]
+
+[profile.dev]
+opt-level = 3
+codegen-units = 1
+panic = "abort"

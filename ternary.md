@@ -1,5 +1,5 @@
 ---
-title: "JX_01: A Ternary ISA"
+title: "JX_01: Computers Don't Need to be Binary"
 author: Jimmy Ostler
 options:
   implicit_slide_ends: true
@@ -11,7 +11,7 @@ Sections
 ===
 <!-- font_size: 2 -->
 <!-- alignment: center -->
-- Motivation TODO(users and requirements)
+- Motivation
 - Technical Background
   - Ternary as a number system
   - Ternary in the context of computing
@@ -37,6 +37,8 @@ ternary computers, called the **Setun**, from the USSR.
 I want to emulate a ternary computer, identify if there are any advantages over binary,
 and learn about the foundations of computers from the beginning.
 
+I want to emulate a computer *fundamentally different* from any computer that currently exists.
+
 Requirements
 ---
 <!-- font_size: 2 -->
@@ -46,7 +48,7 @@ It must:
 - Be capable of I/O
 - Have Graphics Capabilities
 
-In other words, apollo engineer should be able to go to the moon with this.
+In other words, apollo engineers should be able to go to the moon with this.
 
 Technical Background
 ---
@@ -70,13 +72,18 @@ digit's position.
                         ┌──┬─┬─┬─┬─┐              
                     num:│1 │T│0│T│1│              
                         └──┴─┴─┴─┴─┘              
-    digit position (n):  5  4 2 1 0               
+    digit position (n):  4  3 2 1 0               
 value multiplier (3^n): 81 27 9 3 1               
                                                   
     (1*81)+(T*27)+(0*9)+(T*3)+(1*1) = 52 (decimal)
 ```
 
 Here is a ternary number, and how we can find it's value.
+
+<!-- font_size: 2 -->
+Ternary has some nice properties!
+- native negative numbers
+- sign is always the highest nonzero digit
 
 My Computer
 ---
@@ -106,13 +113,15 @@ I invented a ternary hexadecimal equivalent, called septivigntimal
 ```
 There exists a need for an alternative to hexadecimal.
 Several people have tried, none succeeded to my
-satisfaction. I propose the following:  
-                                                 
-  -13 -12 -11 -10 -9 -8 -7 -6 -5 -4 -3 -2 -1     
-    Z   Y   X   W  V  U  T  S  R  Q  P  O  N     
-                                                 
-   13  12  11  10  9  8  7  6  5  4  3  2  1     
-    M   L   K   J  I  H  G  F  E  D  C  B  A     
+satisfaction. I propose the following:
+
+  TTT TT0 TT1 T0T T00 T01 T1T T10 T11 0TT 0T0 0T1 00T
+  -13 -12 -11 -10  -9  -8  -7  -6  -5  -4  -3  -2  -1     
+    Z   Y   X   W   V   U   T   S   R   Q   P   O   N
+    
+  111 110 11T 101 100 10T 1T1 1T0 1TT 011 010 01T 001
+   13  12  11  10   9   8   7   6   5   4   3   2   1     
+    M   L   K   J   I   H   G   F   E   D   C   B   A     
                                                  
  And 0 remains 0. Notably, the only number is 0. 
 ```
@@ -138,7 +147,7 @@ and use the rest for arguments
        │ MEM:   │        
  sft H ├────────┤ bpz  X 
  not I │ load O │ bpp  Y 
- rot J │ stre P │ bpn  Z 
+ rot J │ str  P │ bpn  Z 
 ```
 
 Managing this Process
