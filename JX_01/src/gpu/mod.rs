@@ -107,7 +107,7 @@ impl Gpu {
             })
         }) + 364) as f32;
 
-        println!("{:?}", ((x_1, 729.0 - y_1), (x_2, 729.0 - y_2)));
+        // println!("{:?}", ((x_1, 729.0 - y_1), (x_2, 729.0 - y_2)));
 
         // Flip the x axis when drawing so that coordinates work as if it's centered on (0,0) in
         // [-364, 364] x [-364, 364]
@@ -140,6 +140,23 @@ impl Gpu {
     }
 }
 
+/// All coordinates must be less than 364
+pub fn make_line(one: (isize, isize), two: (isize, isize), color: [Trit; 3]) -> Word {
+    let one: (Word, Word) = (one.0.into(), one.1.into());
+    let two: (Word, Word) = (two.0.into(), two.1.into());
+    let one: ([Trit; 27], [Trit; 27]) = (one.0.into(), one.1.into());
+    let two: ([Trit; 27], [Trit; 27]) = (two.0.into(), two.1.into());
+
+    let mut result = [Trit::Zero; 27];
+    result[0..6].copy_from_slice(&one.0[0..6]);
+    result[6..12].copy_from_slice(&one.1[0..6]);
+    result[12..18].copy_from_slice(&two.0[0..6]);
+    result[18..24].copy_from_slice(&two.1[0..6]);
+    result[24..27].copy_from_slice(&color);
+
+    result.into()
+}
+
 #[cfg(test)]
 pub mod tests {
     use std::time::Duration;
@@ -147,7 +164,7 @@ pub mod tests {
     use sdl3::{event::Event, keyboard::Keycode};
     use ternary::{trits::Trit, word::Word};
 
-    use crate::gpu::Gpu;
+    use crate::gpu::{Gpu, make_line};
 
     #[test]
     fn test_gpu() {
@@ -174,16 +191,18 @@ pub mod tests {
         gpu.reset_canvas();
 
         pub fn take_gpu(mut gpu: Gpu) {
-            let coord1: Word = {
-                use Trit::*;
+            use Trit::*;
+            let coord1_alt: Word = {
                 [
                  POne, POne, POne, POne, POne, POne, POne, POne, POne, POne, POne, POne,
                  NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne, NOne,
                  POne, Zero, Zero
                 ].into()
             };
+            let coord1: Word = make_line((364, 364), (-364, -364), [POne, Zero, Zero]);
+            assert_eq!(coord1, coord1_alt);
 
-            let coord2: Word = {
+            let coord2_alt: Word = {
                 use Trit::*;
                 [
                  POne, POne, POne, POne, POne, POne,
@@ -193,8 +212,10 @@ pub mod tests {
                  Zero, POne, Zero
                 ].into()
             };
+            let coord2: Word = make_line((364, -364), (-364, 364), [Zero, POne, Zero]);
+            assert_eq!(coord2, coord2_alt);
 
-            let coord3: Word = {
+            let coord3_alt: Word = {
                 use Trit::*;
                 [
                  Zero, Zero, Zero, Zero, Zero, Zero,
@@ -204,6 +225,8 @@ pub mod tests {
                  Zero, Zero, POne
                 ].into()
             };
+            let coord3: Word = make_line((0, 364), (0, -364), [Zero, Zero, POne]);
+            assert_eq!(coord3, coord3_alt);
 
             gpu.draw(coord1);
             gpu.draw(coord2);

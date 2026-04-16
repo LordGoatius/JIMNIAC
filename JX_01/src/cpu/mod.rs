@@ -38,7 +38,7 @@ impl JX_01 {
         }
     }
 
-    fn new() -> JX_01 {
+    pub fn new() -> JX_01 {
         let memory = Memory::default();
         let interrupt = Arc::new(CachePadded::new(AtomicBool::new(false)));
         let interrupt_num = Arc::new(CachePadded::new(AtomicU32::new(0)));

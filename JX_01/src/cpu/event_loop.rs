@@ -56,10 +56,10 @@ impl JX_01 {
                 int_status.waiting &= false;
                 int_status.enabled &= false;
 
-                if let Some(idt) = dbg!(self.idt_loc) {
+                if let Some(idt) = self.idt_loc {
                     int_ret = self.status.ip;
-                    let int_addr = dbg!(idt + (<Tryte as Into<Word>>::into(int) << 1));
-                    self.status.ip = dbg!(*self.memory.get_physical_word(int_addr));
+                    let int_addr = idt + (<Tryte as Into<Word>>::into(int) << 1);
+                    self.status.ip = *self.memory.get_physical_word(int_addr);
                 } else {
                     panic!("Must load an IDT before handling interrupts")
                 }
@@ -69,22 +69,22 @@ impl JX_01 {
 
             // It would be nice if I could run this as ternary firmware...
             // NOTE: Next time, use ternary firmware :)
-            if let Some(gpu) = dbg!(self.gpu.as_mut()) {
+            if let Some(gpu) = self.gpu.as_mut() {
                 let vblen: isize = gpu.vector_buffer_size.into();
-                assert!(vblen > 0, "vactor buffer len cannot be less than 0");
+                assert!(vblen >= 0, "vactor buffer len cannot be less than 0");
                 let vbaddr: isize = gpu.vector_buffer.into();
 
                 gpu.reset_canvas();
 
                 for i in 0..vblen {
-                    let line = dbg!(self.memory.get_physical_word_mut((vbaddr + (i * 3)).into()));
+                    let line = self.memory.get_physical_word_mut((vbaddr + (i * 3)).into());
                     gpu.draw(*line);
                 }
 
                 gpu.present();
 
                 // TODO: Fix properly later
-                for event in gpu.sdl.event_pump().unwrap().poll_iter() {
+                if let Some(event) = gpu.sdl.event_pump().unwrap().poll_iter().next() {
                     match event {
                         Event::Quit { .. }
                         | Event::AppTerminating { .. }
@@ -154,7 +154,8 @@ impl JX_01 {
                                     let port = &mut ports.ports[1];
                                     port.store(<TERSCII as Into<Word>>::into(terscii).num(), Ordering::Release);
                                     ports.interrupts.store(true, Ordering::Release);
-                                    ports.interrupt_num.store(Tryte::PONE.num(), Ordering::Release);
+                                    ports.interrupt_num.store(unsafe { std::mem::transmute(Tryte::PONE) }, Ordering::Release);
+                                    int_status.enabled;
                                 }
                             }
                         }
@@ -174,10 +175,9 @@ impl JX_01 {
             }
 
             let instruction_ptr = self.status.ip;
-            let _instr_ptr: isize = dbg!(instruction_ptr.into());
 
             let instruction = *self.memory.get_physical_word(instruction_ptr);
-            match dbg!(isa::decode(instruction)) {
+            match isa::decode(instruction) {
                 HALT => break,
                 DTI => {
                     todo!();
@@ -200,7 +200,7 @@ impl JX_01 {
                     self.interrupt.store(false, Ordering::Release);
                 },
                 LIT(reg) => {
-                    self.idt_loc = dbg!(Some(self.registers.get_word(reg)));
+                    self.idt_loc = Some(self.registers.get_word(reg));
                     self.status.ip = self.status.ip + (Word::PONE << 1);
                 },
                 INTERRUPT(int) => {
